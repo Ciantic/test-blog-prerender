@@ -13,6 +13,7 @@ export const Route = createRootRoute({
         <Link to="/users/$id" params={{ id: '1' }}>
           Users
         </Link>
+        <Link to="/blog">Blog</Link>
       </nav>
       <Outlet />
     </>
