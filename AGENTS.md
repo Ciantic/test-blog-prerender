@@ -1,0 +1,1 @@
+This is SolidJS v2 project, documentation is here if needed https://v2.solidjs.com/
