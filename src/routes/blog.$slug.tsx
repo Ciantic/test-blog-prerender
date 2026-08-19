@@ -23,7 +23,8 @@ const posts: Record<string, { title: string; excerpt: string; body: string }> = 
 // Dummy async — mimics a network round-trip so the loader behaves like a real
 // fetch during SSR/prerendering.
 async function fetchPost(slug: string) {
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  "use server";
+  await new Promise((resolve) => setTimeout(resolve, 1000));
   return posts[slug] ?? { title: 'Unknown', excerpt: '', body: 'No such post' };
 }
 
