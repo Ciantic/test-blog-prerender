@@ -9,6 +9,7 @@ export function getRouter() {
     routeTree,
     defaultPendingComponent: () => <main>Loading…</main>,
     scrollRestoration: true,
+    trailingSlash: 'always',
   });
 
   return router;
