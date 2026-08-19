@@ -1,3 +1,4 @@
+import { createServerFn } from '@tanstack/solid-start';
 import { Link, createFileRoute } from '@tanstack/solid-router';
 
 // Dummy post data, embedded directly. Swap for any API endpoint — the loader
@@ -20,13 +21,13 @@ const posts: Record<string, { title: string; excerpt: string; body: string }> = 
   },
 };
 
-// Dummy async — mimics a network round-trip so the loader behaves like a real
-// fetch during SSR/prerendering.
-async function fetchPost(slug: string) {
-  "use server";
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-  return posts[slug] ?? { title: 'Unknown', excerpt: '', body: 'No such post' };
-}
+// Server function — runs on the server (or at build time during prerendering).
+// On the client, calls become fetch requests to the server.
+const fetchPost = createServerFn({ method: 'GET' })
+  .validator((slug: string) => slug)
+  .handler(async ({ data: slug }) => {
+    return posts[slug] ?? { title: 'Unknown', excerpt: '', body: 'No such post' };
+  });
 
 function PostPage() {
   // Typed by the loader's return type; reactive to param changes.
@@ -47,7 +48,7 @@ function PostPage() {
 }
 
 export const Route = createFileRoute('/blog/$slug')({
-  loader: ({ params }) => fetchPost(params.slug),
+  loader: ({ params }) => fetchPost({ data: params.slug }),
   head: ({ params }) => ({
     meta: [{ title: `${params.slug} - Solid App` }],
   }),
