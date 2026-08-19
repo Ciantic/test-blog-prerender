@@ -1,16 +1,17 @@
 import { Link, createFileRoute } from '@tanstack/solid-router';
-import { getRequestEvent } from '@solidjs/web';
 
-// Loader-driven data: TanStack runs the loader when navigation starts (and
-// caches it per params), so the component renders with data in hand — no
-// in-component fetching. Swap the static JSON for any API endpoint.
+// Dummy user data, embedded directly. Swap for any API endpoint — the loader
+// stays async so the shape is identical to a real fetch.
+const users: Record<string, { name: string; title: string }> = {
+  '1': { name: 'Ada Lovelace', title: 'First programmer' },
+  '2': { name: 'Grace Hopper', title: 'Compiler pioneer' },
+  '3': { name: 'Margaret Hamilton', title: 'Software engineering' },
+};
+
+// Dummy async — mimics a network round-trip so the loader behaves like a real
+// fetch during SSR/prerendering.
 async function fetchUser(id: string) {
-  // Same-origin URLs need an explicit origin when this runs during SSR
-  // (getRequestEvent() is undefined in the browser, where location wins).
-  const origin = getRequestEvent()?.request.url ?? location.origin;
-  const response = await fetch(new URL('/users.json', origin));
-  const users: Record<string, { name: string; title: string }> =
-    await response.json();
+  await new Promise((resolve) => setTimeout(resolve, 0));
   return users[id] ?? { name: 'Unknown', title: 'No such user' };
 }
 

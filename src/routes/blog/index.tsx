@@ -1,16 +1,26 @@
 import { Link, createFileRoute } from '@tanstack/solid-router';
-import { getRequestEvent } from '@solidjs/web';
 
-// Loader-driven data: TanStack runs the loader when navigation starts (and
-// caches it per params), so the component renders with data in hand — no
-// in-component fetching. Swap the static JSON for any API endpoint.
+// Dummy post data, embedded directly. Swap for any API endpoint — the loader
+// stays async so the shape is identical to a real fetch.
+const posts: Record<string, { title: string; excerpt: string }> = {
+  'hello-solid': {
+    title: 'Hello Solid',
+    excerpt: 'Getting started with Solid and TanStack Router.',
+  },
+  'loaders-explained': {
+    title: 'Loaders Explained',
+    excerpt: 'How loader-driven data fetching works in TanStack Router.',
+  },
+  prerendering: {
+    title: 'Prerendering',
+    excerpt: 'Serving static HTML for every route at build time.',
+  },
+};
+
+// Dummy async — mimics a network round-trip so the loader behaves like a real
+// fetch during SSR/prerendering.
 async function fetchPosts() {
-  // Same-origin URLs need an explicit origin when this runs during SSR
-  // (getRequestEvent() is undefined in the browser, where location wins).
-  const origin = getRequestEvent()?.request.url ?? location.origin;
-  const response = await fetch(new URL('/blog.json', origin));
-  const posts: Record<string, { title: string; excerpt: string }> =
-    await response.json();
+  await new Promise((resolve) => setTimeout(resolve, 0));
   return posts;
 }
 

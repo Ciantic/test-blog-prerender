@@ -1,20 +1,37 @@
-import { tanstackRouter } from '@tanstack/router-plugin/vite';
+import { tanstackStart } from '@tanstack/solid-start/plugin/vite';
 import { defineConfig } from 'vitest/config';
 import solid from '@solidjs/vite-plugin';
 
 export default defineConfig({
-  // Turnkey client mode: no index.html and no mount file — the plugin
-  // generates the entries around src/App.tsx, wrapped in src/Document.tsx
-  // (or a built-in shell). `vite build` prerenders the shell into
-  // dist/client/index.html and emits a purely static dist/client.
+  // TanStack Start owns the entries, dev serving, and the build. It scans
+  // src/routes and generates src/routeTree.gen.ts, and prerenders the app to
+  // static HTML at build time.
   plugins: [
-    // Scans src/routes and generates src/routeTree.gen.ts — the typed route
-    // tree — on dev and build. Must be registered before solid().
-    tanstackRouter({ target: 'solid', autoCodeSplitting: true }),
-    // Client mode only for now: TanStack's SSR needs per-request router
-    // wiring (router.load() + dehydration) that the generated streaming
-    // entry doesn't perform — see the README's SSR note.
-    solid({ start: true }),
+    // Must be registered before solid().
+    tanstackStart({
+      prerender: {
+        // Enable prerendering.
+        enabled: true,
+        // Emit pages at /page/index.html instead of /page.html.
+        autoSubfolderIndex: true,
+        // Discover static routes automatically and merge with `pages`.
+        autoStaticPathsDiscovery: true,
+        // Extract links from prerendered HTML and prerender those too.
+        crawlLinks: true,
+        // Don't prerender the dynamic /users/* routes — they'd generate an
+        // unbounded set of directories.
+        filter: ({ path }) => !path.startsWith('/users'),
+      },
+      // Explicitly prerender every blog post from the dummy data.
+      pages: [
+        { path: '/blog/hello-solid' },
+        { path: '/blog/loaders-explained' },
+        { path: '/blog/prerendering' },
+      ],
+    }),
+    // @solidjs/vite-plugin in plain SSR transform mode — TanStack Start owns
+    // the entries and server, so we only need the JSX/SSR transforms.
+    solid({ ssr: true }),
   ],
   server: {
     port: 3000,

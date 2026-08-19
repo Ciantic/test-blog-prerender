@@ -1,4 +1,12 @@
-import { HeadContent, Link, Outlet, createRootRoute } from '@tanstack/solid-router';
+import {
+  HeadContent,
+  Link,
+  Outlet,
+  Scripts,
+  createRootRoute,
+} from '@tanstack/solid-router';
+import { HydrationScript } from '@solidjs/web';
+import type { ParentProps } from 'solid-js';
 
 // The root route: the site-wide layout every route renders inside, plus the
 // not-found boundary. <HeadContent /> renders whatever the matched routes
@@ -6,8 +14,7 @@ import { HeadContent, Link, Outlet, createRootRoute } from '@tanstack/solid-rout
 export const Route = createRootRoute({
   head: () => ({ meta: [{ title: 'Solid App' }] }),
   component: () => (
-    <>
-      <HeadContent />
+    <RootDocument>
       <nav>
         <Link to="/">Home</Link>
         <Link to="/users/$id" params={{ id: '1' }}>
@@ -16,7 +23,7 @@ export const Route = createRootRoute({
         <Link to="/blog">Blog</Link>
       </nav>
       <Outlet />
-    </>
+    </RootDocument>
   ),
   notFoundComponent: () => (
     <main>
@@ -31,3 +38,20 @@ export const Route = createRootRoute({
     </main>
   ),
 });
+
+// The document shell — the full <html> document. TanStack Start renders this
+// on the server and hydrates it on the client.
+function RootDocument(props: ParentProps) {
+  return (
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" />
+        <HydrationScript />
+        <HeadContent />
+      </head>
+      <body>{props.children}</body>
+    </html>
+  );
+}

@@ -19,11 +19,13 @@
     "jsdom": "^25.0.1",
     "typescript": "^5.9.2",
     "vite": "^8.1.5",
+    "vite-plugin-solid": "^2.11.14",
     "vitest": "^4.0.0"
   },
   "dependencies": {
     "@solidjs/web": "^2.0.0-rc.0",
     "@tanstack/solid-router": "^2.0.0-rc.0",
+    "@tanstack/solid-start": "2.0.0-rc.0",
     "solid-js": "^2.0.0-rc.0"
   }
 }
