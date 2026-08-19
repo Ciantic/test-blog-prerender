@@ -7,12 +7,16 @@ import {
 } from '@tanstack/solid-router';
 import { HydrationScript } from '@solidjs/web';
 import type { ParentProps } from 'solid-js';
+import appCss from '../App.css?url';
 
 // The root route: the site-wide layout every route renders inside, plus the
 // not-found boundary. <HeadContent /> renders whatever the matched routes
 // declare in their `head` options (titles here).
 export const Route = createRootRoute({
-  head: () => ({ meta: [{ title: 'Solid App' }] }),
+  head: () => ({
+    meta: [{ title: 'Solid App' }],
+    links: [{ rel: 'stylesheet', href: appCss }],
+  }),
   component: () => (
     <RootDocument>
       <nav>
@@ -51,7 +55,10 @@ function RootDocument(props: ParentProps) {
         <HydrationScript />
         <HeadContent />
       </head>
-      <body>{props.children}</body>
+      <body>
+        {props.children}
+        <Scripts />
+      </body>
     </html>
   );
 }

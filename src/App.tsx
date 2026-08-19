@@ -1,5 +1,4 @@
 import { RouterProvider } from '@tanstack/solid-router';
-import './App.css';
 
 import { getRouter } from './router';
 

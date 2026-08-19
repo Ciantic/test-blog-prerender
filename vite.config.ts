@@ -1,6 +1,6 @@
 import { tanstackStart } from '@tanstack/solid-start/plugin/vite';
 import { defineConfig } from 'vitest/config';
-import solid from '@solidjs/vite-plugin';
+import solid from 'vite-plugin-solid';
 
 export default defineConfig({
   // TanStack Start owns the entries, dev serving, and the build. It scans
@@ -29,8 +29,9 @@ export default defineConfig({
         { path: '/blog/prerendering' },
       ],
     }),
-    // @solidjs/vite-plugin in plain SSR transform mode — TanStack Start owns
-    // the entries and server, so we only need the JSX/SSR transforms.
+    // vite-plugin-solid in SSR mode — the supported Solid plugin for
+    // TanStack Start. It injects the client entry and handles the SSR
+    // transforms that tanstackStart's server entry relies on.
     solid({ ssr: true }),
   ],
   server: {
