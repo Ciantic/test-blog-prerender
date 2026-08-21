@@ -8,6 +8,9 @@
 // `import.meta.env.SSR` is true in the server/prerender build and false in the
 // client bundle, so the fs branch is tree-shaken out of the client code.
 
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+
 export interface BlogPost {
   title: string;
   excerpt: string;
@@ -23,8 +26,6 @@ export interface BlogIndexEntry {
 async function readJson<T>(path: string): Promise<T> {
   if (import.meta.env.SSR) {
     // During SSR/prerender the CWD is the project root, so public/ is here.
-    const { readFile } = await import('node:fs/promises');
-    const { join } = await import('node:path');
     const raw = await readFile(join(process.cwd(), 'public', path), 'utf-8');
     return JSON.parse(raw) as T;
   }
