@@ -1,0 +1,5 @@
+{
+  "title": "Hello Solid",
+  "excerpt": "Getting started with Solid and TanStack Router.",
+  "body": "Solid is a declarative JavaScript library for building user interfaces. Combined with TanStack Router, you get type-safe, loader-driven routing out of the box."
+}

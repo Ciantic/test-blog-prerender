@@ -1,0 +1,5 @@
+{
+  "title": "Loaders Explained",
+  "excerpt": "How loader-driven data fetching works in TanStack Router.",
+  "body": "TanStack Router runs loaders when navigation starts and caches the result per params. The component then renders with data already in hand — no in-component fetching required."
+}

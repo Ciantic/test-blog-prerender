@@ -1,0 +1,5 @@
+{
+  "title": "Prerendering",
+  "excerpt": "Serving static HTML for every route at build time.",
+  "body": "With prerendering, every route is rendered to static HTML at build time. This gives you fast first paint and great SEO while keeping the full SPA experience."
+}
