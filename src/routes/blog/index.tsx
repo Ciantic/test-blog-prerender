@@ -34,7 +34,7 @@ function BlogIndex() {
       <ul>
         {Object.entries(posts()).map(([slug, post]) => (
           <li>
-            <Link to="/blog/$slug" params={{ slug }}>
+            <Link to="/blog/$slug/" params={{ slug }}>
               <h2>{post.title}</h2>
               <p>{post.excerpt}</p>
             </Link>

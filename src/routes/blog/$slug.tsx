@@ -40,7 +40,7 @@ function PostPage() {
         <h2>{post().title}</h2>
         <p>{post().body}</p>
         <p>
-          <Link to="/blog">Back to blog</Link>
+          <Link to="/blog/">Back to blog</Link>
         </p>
       </section>
     </main>

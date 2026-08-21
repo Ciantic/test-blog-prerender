@@ -27,7 +27,7 @@ function UserPage() {
         <p>{user().title}</p>
         <p>
           <Link
-            to="/users/$id"
+            to="/users/$id/"
             params={(prev) => ({ id: String(Number(prev.id) + 1) })}
           >
             Next user

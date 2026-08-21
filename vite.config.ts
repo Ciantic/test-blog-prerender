@@ -24,9 +24,9 @@ export default defineConfig({
       },
       // Explicitly prerender every blog post from the dummy data.
       pages: [
-        { path: '/blog/hello-solid' },
-        { path: '/blog/loaders-explained' },
-        { path: '/blog/prerendering' },
+        { path: '/blog/hello-solid/' },
+        { path: '/blog/loaders-explained/' },
+        { path: '/blog/prerendering/' },
       ],
     }),
     // vite-plugin-solid in SSR mode — the supported Solid plugin for
