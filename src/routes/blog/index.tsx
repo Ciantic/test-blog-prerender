@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/solid-router';
-import { fetchPosts } from '../../lib/blog';
+import { getPosts } from '../../lib/blog';
 
 function BlogIndex() {
   // Typed by the loader's return type.
@@ -11,7 +11,7 @@ function BlogIndex() {
       <ul>
         {posts().map((post) => (
           <li>
-            <Link to="/blog/$slug/" params={{ slug: post.slug }}>
+            <Link to="/$year/$slug/" params={{ year: String(post.year), slug: post.slug }}>
               <h2>{post.title}</h2>
               <p>{post.excerpt}</p>
             </Link>
@@ -23,7 +23,7 @@ function BlogIndex() {
 }
 
 export const Route = createFileRoute('/blog/')({
-  loader: () => fetchPosts(),
+  loader: () => getPosts(),
   head: () => ({ meta: [{ title: 'Blog - Solid App' }] }),
   component: BlogIndex,
 });

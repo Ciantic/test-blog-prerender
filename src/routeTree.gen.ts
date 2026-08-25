@@ -10,8 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as YearSlugRouteImport } from './routes/$year.$slug'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
-import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as UsersIdRouteImport } from './routes/users.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -19,14 +19,14 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const YearSlugRoute = YearSlugRouteImport.update({
+  id: '/$year/$slug',
+  path: '/$year/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogIndexRoute = BlogIndexRouteImport.update({
   id: '/blog/',
   path: '/blog/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogSlugRoute = BlogSlugRouteImport.update({
-  id: '/blog/$slug',
-  path: '/blog/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UsersIdRoute = UsersIdRouteImport.update({
@@ -37,34 +37,34 @@ const UsersIdRoute = UsersIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/blog/$slug': typeof BlogSlugRoute
+  '/$year/$slug': typeof YearSlugRoute
   '/users/$id': typeof UsersIdRoute
   '/blog/': typeof BlogIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/blog/$slug': typeof BlogSlugRoute
+  '/$year/$slug': typeof YearSlugRoute
   '/users/$id': typeof UsersIdRoute
   '/blog': typeof BlogIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/blog/$slug': typeof BlogSlugRoute
+  '/$year/$slug': typeof YearSlugRoute
   '/users/$id': typeof UsersIdRoute
   '/blog/': typeof BlogIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/blog/$slug' | '/users/$id' | '/blog/'
+  fullPaths: '/' | '/$year/$slug' | '/users/$id' | '/blog/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/blog/$slug' | '/users/$id' | '/blog'
-  id: '__root__' | '/' | '/blog/$slug' | '/users/$id' | '/blog/'
+  to: '/' | '/$year/$slug' | '/users/$id' | '/blog'
+  id: '__root__' | '/' | '/$year/$slug' | '/users/$id' | '/blog/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  BlogSlugRoute: typeof BlogSlugRoute
+  YearSlugRoute: typeof YearSlugRoute
   UsersIdRoute: typeof UsersIdRoute
   BlogIndexRoute: typeof BlogIndexRoute
 }
@@ -78,18 +78,18 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$year/$slug': {
+      id: '/$year/$slug'
+      path: '/$year/$slug'
+      fullPath: '/$year/$slug'
+      preLoaderRoute: typeof YearSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blog/': {
       id: '/blog/'
       path: '/blog'
       fullPath: '/blog/'
       preLoaderRoute: typeof BlogIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blog/$slug': {
-      id: '/blog/$slug'
-      path: '/blog/$slug'
-      fullPath: '/blog/$slug'
-      preLoaderRoute: typeof BlogSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/users/$id': {
@@ -104,7 +104,7 @@ declare module '@tanstack/solid-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  BlogSlugRoute: BlogSlugRoute,
+  YearSlugRoute: YearSlugRoute,
   UsersIdRoute: UsersIdRoute,
   BlogIndexRoute: BlogIndexRoute,
 }

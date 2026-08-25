@@ -28,6 +28,7 @@
     "@solidjs/web": "^2.0.0-rc.0",
     "@tanstack/solid-router": "^2.0.0-rc.0",
     "@tanstack/solid-start": "2.0.0-rc.0",
+    "marked": "^18.0.11",
     "solid-js": "^2.0.0-rc.0"
   }
 }
