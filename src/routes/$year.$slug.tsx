@@ -6,10 +6,14 @@ function PostPage() {
   const post = Route.useLoaderData();
 
   return (
-    <main>
-      <section innerHTML={post().html} />
-      <p>
-        <Link to="/blog/">Back to blog</Link>
+    <main class="container mx-auto max-w-3xl px-4 py-10">
+      <article class="prose lg:prose-lg">
+        <div innerHTML={post().html} />
+      </article>
+      <p class="mt-10">
+        <Link to="/" class="link link-primary">
+          &larr; Back to blog
+        </Link>
       </p>
     </main>
   );

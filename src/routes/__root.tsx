@@ -19,19 +19,30 @@ export const Route = createRootRoute({
   }),
   component: () => (
     <RootDocument>
-      <nav>
-        <Link to="/">Home</Link>
-        <Link to="/blog/">Blog</Link>
-      </nav>
+      <div class="navbar bg-base-200 shadow-sm">
+        <div class="navbar-start">
+          <Link to="/" class="btn btn-ghost text-lg">
+            My Blog
+          </Link>
+        </div>
+        <div class="navbar-center">
+          <ul class="menu menu-horizontal gap-1">
+            <li>
+              <Link to="/">Home</Link>
+            </li>
+          </ul>
+        </div>
+        <div class="navbar-end" />
+      </div>
       <Outlet />
     </RootDocument>
   ),
   notFoundComponent: () => (
-    <main>
-      <h1>Page Not Found</h1>
+    <main class="container mx-auto px-4 py-16 text-center">
+      <h1 class="text-4xl font-bold mb-4">Page Not Found</h1>
       <p>
         Visit{' '}
-        <a href="https://docs.solidjs.com" target="_blank" rel="noreferrer">
+        <a href="https://docs.solidjs.com" target="_blank" rel="noreferrer" class="link link-primary">
           docs.solidjs.com
         </a>{' '}
         to learn how to build Solid apps.
