@@ -21,6 +21,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@types/node": "^26.2.0",
     "daisyui": "^5.7.22",
+    "feed": "^6.0.0",
     "jsdom": "^25.0.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.2",

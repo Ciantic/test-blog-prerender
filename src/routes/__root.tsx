@@ -15,7 +15,11 @@ import appCss from '../App.css?url';
 export const Route = createRootRoute({
   head: () => ({
     meta: [{ title: 'Solid App' }],
-    links: [{ rel: 'stylesheet', href: appCss }],
+    links: [
+      { rel: 'stylesheet', href: appCss },
+      // RSS autodiscovery — lets feed readers find the feed from any page.
+      { rel: 'alternate', type: 'application/rss+xml', title: 'My Blog', href: '/rss.xml' },
+    ],
   }),
   component: () => (
     <RootDocument>
