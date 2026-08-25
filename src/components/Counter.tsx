@@ -4,7 +4,7 @@ export default function Counter() {
   const [count, setCount] = createSignal(0);
   return (
     <button
-      class="increment"
+      class="btn btn-primary"
       onClick={() => setCount(count() + 1)}
       type="button"
     >

@@ -1,3 +1,6 @@
+@import 'tailwindcss';
+@plugin 'daisyui';
+
 body {
   margin: 0;
   font-family:
@@ -38,12 +41,6 @@ main {
   animation: logo-spin infinite 20s linear;
   height: 24vmin;
   pointer-events: none;
-}
-
-.increment {
-  font-size: 1rem;
-  padding: 0.5rem 1.5rem;
-  cursor: pointer;
 }
 
 main a {

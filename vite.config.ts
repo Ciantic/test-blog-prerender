@@ -1,4 +1,5 @@
 import { tanstackStart } from '@tanstack/solid-start/plugin/vite';
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import solid from 'vite-plugin-solid';
 import { execFileSync } from 'node:child_process';
@@ -98,6 +99,7 @@ export default defineConfig({
     // TanStack Start. It injects the client entry and handles the SSR
     // transforms that tanstackStart's server entry relies on.
     solid({ ssr: true }),
+    tailwindcss(),
   ],
   server: {
     port: 3000,
