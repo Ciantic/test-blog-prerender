@@ -15,6 +15,8 @@ export interface BlogPost {
   slug: string;
   /** Year of the post's last git commit. */
   year: number;
+  /** Commit date as YYYY-MM-DD, e.g. 2026-01-30. */
+  date: string;
   title: string;
   excerpt: string;
   /** Rendered HTML from the post's markdown body. */
@@ -24,6 +26,7 @@ export interface BlogPost {
 export interface BlogIndexEntry {
   slug: string;
   year: number;
+  date: string;
   title: string;
   excerpt: string;
 }
@@ -61,17 +64,18 @@ function extractExcerpt(markdown: string): string {
   return paragraph.replace(/\s+/g, ' ').trim();
 }
 
-const metaBySlug = new Map(postMetas.map((meta) => [meta.slug, meta.year]));
+const metaBySlug = new Map(postMetas.map((meta) => [meta.slug, meta]));
 
 // Only include posts that have a git commit (i.e. appear in postMetas).
 const posts = Object.entries(modules)
   .map(([path, markdown]) => {
     const slug = slugFromPath(path);
-    const year = metaBySlug.get(slug);
-    if (year === undefined) return undefined; // Uncommitted — skip.
+    const meta = metaBySlug.get(slug);
+    if (!meta) return undefined; // Uncommitted — skip.
     return {
       slug,
-      year,
+      year: meta.year,
+      date: meta.date,
       title: extractTitle(markdown, slug),
       excerpt: extractExcerpt(markdown),
       html: marked.parse(markdown, { async: false }) as string,
@@ -82,9 +86,16 @@ const posts = Object.entries(modules)
 const byYearSlug = new Map(posts.map((post) => [`${post.year}/${post.slug}`, post]));
 
 export function getPosts(): BlogIndexEntry[] {
-  return posts.map(({ slug, year, title, excerpt }) => ({ slug, year, title, excerpt }));
+  return posts.map(({ slug, year, date, title, excerpt }) => ({ slug, year, date, title, excerpt }));
 }
 
 export function getPost(year: number | string, slug: string): BlogPost | undefined {
   return byYearSlug.get(`${year}/${slug}`);
+}
+
+/** Formats a YYYY-MM-DD date in Finnish style, e.g. 30.1.2026. */
+export function formatDateFinnish(date: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  if (!y || !m || !d) return date;
+  return `${d}.${m}.${y}`;
 }

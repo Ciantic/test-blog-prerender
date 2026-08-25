@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/solid-router';
-import { getPost } from '../lib/blog';
+import { getPost, formatDateFinnish } from '../lib/blog';
 
 function PostPage() {
   // Typed by the loader's return type; reactive to param changes.
@@ -7,11 +7,14 @@ function PostPage() {
 
   return (
     <main class="container mx-auto max-w-3xl px-4 py-10">
+      <p class="text-sm text-base-content/50 mb-6">
+        {formatDateFinnish(post().date)}
+      </p>
       <article class="prose lg:prose-lg">
         <div innerHTML={post().html} />
       </article>
       <p class="mt-10">
-        <Link to="/" class="link link-primary">
+        <Link to="/" class="btn btn-primary">
           &larr; Back to blog
         </Link>
       </p>

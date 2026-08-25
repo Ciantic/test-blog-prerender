@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/solid-router';
-import { getPosts } from '../lib/blog';
+import { getPosts, formatDateFinnish } from '../lib/blog';
 
 function Home() {
   // Typed by the loader's return type.
@@ -19,7 +19,7 @@ function Home() {
               <h2 class="card-title text-2xl">{post.title}</h2>
               <p class="text-base-content/70">{post.excerpt}</p>
               <div class="text-sm text-base-content/50 mt-2">
-                {post.year}
+                {formatDateFinnish(post.date)}
               </div>
             </Link>
           </li>

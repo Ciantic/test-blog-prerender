@@ -17,6 +17,8 @@ export interface PostMeta {
   slug: string;
   /** Year of the post's last git commit, e.g. 2026. */
   year: number;
+  /** Commit date as YYYY-MM-DD, e.g. 2026-01-30. */
+  date: string;
 }
 
 function getPostMetas(): PostMeta[] {
@@ -34,14 +36,15 @@ function getPostMetas(): PostMeta[] {
           // later edits don't change the post's URL year.
           '--diff-filter=A',
           '--format=%ad',
-          '--date=format:%Y',
+          '--date=format:%Y-%m-%d',
           '--',
           file,
         ],
         { cwd: postsDir, encoding: 'utf-8' },
       ).trim();
       if (!out) continue; // No commit for this file yet — skip it.
-      metas.push({ slug: file.replace(/\.md$/, ''), year: Number(out) });
+      const date = out.split('\n')[0];
+      metas.push({ slug: file.replace(/\.md$/, ''), year: Number(date.slice(0, 4)), date });
     } catch {
       // Not a git repo or git unavailable — skip.
     }
