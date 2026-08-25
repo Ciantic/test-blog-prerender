@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as YearSlugRouteImport } from './routes/$year.$slug'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
-import { Route as UsersIdRouteImport } from './routes/users.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -29,43 +28,34 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
   path: '/blog/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UsersIdRoute = UsersIdRouteImport.update({
-  id: '/users/$id',
-  path: '/users/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$year/$slug': typeof YearSlugRoute
-  '/users/$id': typeof UsersIdRoute
   '/blog/': typeof BlogIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$year/$slug': typeof YearSlugRoute
-  '/users/$id': typeof UsersIdRoute
   '/blog': typeof BlogIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$year/$slug': typeof YearSlugRoute
-  '/users/$id': typeof UsersIdRoute
   '/blog/': typeof BlogIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$year/$slug' | '/users/$id' | '/blog/'
+  fullPaths: '/' | '/$year/$slug' | '/blog/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$year/$slug' | '/users/$id' | '/blog'
-  id: '__root__' | '/' | '/$year/$slug' | '/users/$id' | '/blog/'
+  to: '/' | '/$year/$slug' | '/blog'
+  id: '__root__' | '/' | '/$year/$slug' | '/blog/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   YearSlugRoute: typeof YearSlugRoute
-  UsersIdRoute: typeof UsersIdRoute
   BlogIndexRoute: typeof BlogIndexRoute
 }
 
@@ -92,20 +82,12 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof BlogIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/users/$id': {
-      id: '/users/$id'
-      path: '/users/$id'
-      fullPath: '/users/$id'
-      preLoaderRoute: typeof UsersIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   YearSlugRoute: YearSlugRoute,
-  UsersIdRoute: UsersIdRoute,
   BlogIndexRoute: BlogIndexRoute,
 }
 export const routeTree = rootRouteImport

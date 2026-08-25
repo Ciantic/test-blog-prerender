@@ -1,5 +1,0 @@
-[
-  { "slug": "hello-solid", "title": "Hello Solid", "excerpt": "Getting started with Solid and TanStack Router." },
-  { "slug": "loaders-explained", "title": "Loaders Explained", "excerpt": "How loader-driven data fetching works in TanStack Router." },
-  { "slug": "prerendering", "title": "Prerendering", "excerpt": "Serving static HTML for every route at build time." }
-]

@@ -85,9 +85,6 @@ export default defineConfig({
         autoStaticPathsDiscovery: true,
         // Extract links from prerendered HTML and prerender those too.
         crawlLinks: true,
-        // Don't prerender the dynamic /users/* routes — they'd generate an
-        // unbounded set of directories.
-        filter: ({ path }) => !path.startsWith('/users'),
       },
       // Explicitly prerender every blog post at /<year>/<slug>/. Years come
       // from the posts/ git repo's last-commit dates.
