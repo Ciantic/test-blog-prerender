@@ -13,6 +13,18 @@
   margin-bottom: 0.1em;
 }
 
+/* Verdana runs wide; keep the post title from dominating the page.
+   Sized in em so it scales with the prose size (base vs lg:prose-lg)
+   and always stays clearly above h2. */
+.prose h1 {
+  font-size: 1.9em;
+  line-height: 1.3;
+}
+.prose h2 {
+  font-size: 1.35em;
+  line-height: 1.35;
+}
+
 @plugin 'daisyui' {
   themes: bumblebee --default, sunset --prefersdark;
 }

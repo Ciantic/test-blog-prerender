@@ -23,7 +23,8 @@ export const Route = createRootRoute({
   }),
   component: () => (
     <RootDocument>
-      <div class="navbar bg-base-200 shadow-sm">
+      <div class="flex min-h-screen flex-col">
+        <div class="navbar bg-base-200 shadow-sm">
         <div class="navbar-start">
           <Link to="/" class="btn btn-ghost text-lg">
             My Blog
@@ -61,6 +62,28 @@ export const Route = createRootRoute({
         </div>
       </div>
       <Outlet />
+        <footer class="footer footer-center bg-base-200 text-base-content/70 mt-auto p-6 text-sm">
+        <nav class="flex gap-4">
+          <Link to="/" class="link link-hover">
+            Home
+          </Link>
+          <a href="/rss.xml" class="link link-hover">
+            RSS
+          </a>
+          <a
+            href="https://docs.solidjs.com"
+            target="_blank"
+            rel="noreferrer"
+            class="link link-hover"
+          >
+            Solid Docs
+          </a>
+        </nav>
+        <aside>
+          <p>&copy; {new Date().getFullYear()} My Blog. Built with SolidJS.</p>
+        </aside>
+        </footer>
+      </div>
     </RootDocument>
   ),
   notFoundComponent: () => (

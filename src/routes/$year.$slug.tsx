@@ -13,8 +13,8 @@ function PostPage() {
       <article class="prose lg:prose-lg">
         <div innerHTML={post().html} />
       </article>
-      <p class="mt-10">
-        <Link to="/" class="btn btn-primary">
+      <p class="mt-20">
+        <Link to="/" class="btn btn-soft">
           &larr; Back to blog
         </Link>
       </p>
