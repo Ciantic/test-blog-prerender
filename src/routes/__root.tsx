@@ -27,9 +27,11 @@ export const Route = createRootRoute({
         {/* Background on the outer div keeps the bar full-width while the
             navbar itself is capped at the same max width as page content. */}
         <div class="bg-base-200 shadow-sm">
-        <div class="navbar mx-auto max-w-3xl">
+        <div class="navbar mx-auto max-w-3xl px-4">
         <div class="navbar-start">
-          <Link to="/" class="btn btn-primary text-lg">
+          {/* px-0: without it the button's own 16px padding pushes the brand
+              text out of alignment with page content and footer links. */}
+          <Link to="/" class="btn btn-primary  text-lg">
             My Blog
           </Link>
         </div>
@@ -74,7 +76,7 @@ export const Route = createRootRoute({
         <footer class="bg-base-200 text-base-content/70 mt-auto text-sm">
         {/* grid-cols-[auto_1fr]: daisyUI's .footer is a single-column grid;
             two columns put the nav left and the copyright right. */}
-        <div class="footer mx-auto grid max-w-3xl grid-cols-[auto_1fr] items-center p-6">
+        <div class="footer mx-auto grid max-w-3xl grid-cols-[auto_1fr] items-center px-4 py-6">
         <nav class="flex gap-4">
           <Link to="/" class="link link-hover">
             Home
