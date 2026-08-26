@@ -24,9 +24,12 @@ export const Route = createRootRoute({
   component: () => (
     <RootDocument>
       <div class="flex min-h-screen flex-col">
-        <div class="navbar bg-base-200 shadow-sm">
+        {/* Background on the outer div keeps the bar full-width while the
+            navbar itself is capped at the same max width as page content. */}
+        <div class="bg-base-200 shadow-sm">
+        <div class="navbar mx-auto max-w-3xl">
         <div class="navbar-start">
-          <Link to="/" class="btn btn-ghost text-lg">
+          <Link to="/" class="btn btn-primary text-lg">
             My Blog
           </Link>
         </div>
@@ -63,9 +66,15 @@ export const Route = createRootRoute({
             </svg>
           </label>
         </div>
+        </div>
       </div>
       <Outlet />
-        <footer class="footer footer-center bg-base-200 text-base-content/70 mt-auto p-6 text-sm">
+        {/* Same pattern as the header: full-width background, content capped
+            at max-w-3xl to align with page content. */}
+        <footer class="bg-base-200 text-base-content/70 mt-auto text-sm">
+        {/* grid-cols-[auto_1fr]: daisyUI's .footer is a single-column grid;
+            two columns put the nav left and the copyright right. */}
+        <div class="footer mx-auto grid max-w-3xl grid-cols-[auto_1fr] items-center p-6">
         <nav class="flex gap-4">
           <Link to="/" class="link link-hover">
             Home
@@ -85,9 +94,10 @@ export const Route = createRootRoute({
             Solid Docs
           </a>
         </nav>
-        <aside>
+        <aside class="justify-self-end text-right">
           <p>&copy; {new Date().getFullYear()} My Blog. Built with SolidJS.</p>
         </aside>
+        </div>
         </footer>
       </div>
     </RootDocument>
