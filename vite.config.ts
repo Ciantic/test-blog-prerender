@@ -35,10 +35,15 @@ export interface PostMeta {
 
 const postsDir = join(import.meta.dirname, 'posts');
 
+/** All files under posts/ recursively, as slash-separated relative paths. */
+function listPostFiles(): string[] {
+  return readdirSync(postsDir, { recursive: true, encoding: 'utf-8' }).map((f) =>
+    f.replaceAll('\\', '/'),
+  );
+}
+
 function getPostMetas(): PostMeta[] {
-  const files = readdirSync(postsDir, { recursive: true, encoding: 'utf-8' })
-    .map((f) => f.replaceAll('\\', '/'))
-    .filter((f) => f.endsWith('.md'));
+  const files = listPostFiles().filter((f) => f.endsWith('.md'));
 
   const metas: PostMeta[] = [];
   for (const file of files) {
@@ -80,17 +85,11 @@ const virtualPostMeta = 'virtual:post-meta';
 // (RSS requires absolute link elements). Adjust when deploying.
 export const SITE_URL = 'https://example.com';
 
-// Public location of the posts repo's assets: the site root. Markdown image
-// refs are rewritten to root-relative paths mirroring the posts/ structure
-// (see src/lib/blog.ts), e.g. posts/img/foo.png -> /img/foo.png.
-
 // All non-markdown files in the posts repo (recursively). These are the
-// posts' embeddable assets, served at /<rel>.
+// posts' embeddable assets, served at /<rel> mirroring the posts/ layout.
 function postAssetFiles(): string[] {
-  return readdirSync(postsDir, { recursive: true, encoding: 'utf-8' })
-    .map((f) => f.replaceAll('\\', '/'))
-    .filter((f) => {
-      if (f.endsWith('.md')) return false;
+  return listPostFiles().filter((f) => {
+    if (f.endsWith('.md')) return false;
       try {
         return statSync(join(postsDir, f)).isFile();
       } catch {
@@ -116,13 +115,9 @@ function mimeTypeOf(path: string): string {
   return MIME_TYPES[path.slice(path.lastIndexOf('.')).toLowerCase()] ?? 'application/octet-stream';
 }
 
-// Serves the posts repo's assets at /<rel> (rel = path inside the posts
-// repo).
-//
-// The posts/ directory is its own repo with its own internal structure;
-// authors reference images relatively (e.g. ![](img/foo.png)), and those refs
-// are rewritten (see src/lib/blog.ts) to root-relative URLs that mirror the
-// posts/ layout:
+// Serves the posts repo's non-markdown files one-to-one at /<rel> (rel =
+// path inside the posts repo), so post assets like images are reachable at
+// URLs mirroring the posts/ layout:
 //   - dev: middleware reads straight from posts/
 //   - build: files are copied to dist/client/<rel>
 function postsAssetsPlugin(): Plugin {
@@ -186,7 +181,8 @@ function rssPlugin(): Plugin {
         const url = `${SITE_URL}/${meta.urlPath}/`;
         // Use the post's `# Heading` as the title; fall back to the slug.
         const md = readFileSync(join(postsDir, meta.path), 'utf-8');
-        const title = md.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? meta.slug;
+        const title =
+          md.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? meta.urlPath.split('/').pop()!;
         feed.addItem({
           title,
           id: url,
