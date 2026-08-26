@@ -10,22 +10,27 @@ import type { Plugin } from 'vite';
 
 // --- Git-derived post metadata -------------------------------------------
 //
-// Posts live in posts/, optionally organized into YYYY directories
-// (e.g. posts/2026/my-post.md). The URL year comes from that leading year
-// directory when present; otherwise it falls back to the post's git add
-// date. The slug is always just the filename (directories never appear in
-// URLs). Posts with no commit yet are skipped entirely (they don't exist as
-// far as the blog is concerned).
+// Posts live in posts/, optionally organized into subdirectories. The URL
+// structure mirrors the posts/ directory exactly:
+//   posts/foo.md              -> /foo/
+//   posts/2026/my-post.md     -> /2026/my-post/
+//   posts/img/test-image.png  -> /img/test-image.png
+// Posts with no commit yet are skipped entirely (they don't exist as far as
+// the blog is concerned).
 
 export interface PostMeta {
-  /** Filename-derived slug, e.g. 'my-post'. */
-  slug: string;
+  /** URL path inside the site (no leading/trailing slash), e.g. '2026/my-post'. */
+  urlPath: string;
   /** Path of the markdown file inside posts/, e.g. '2026/my-post.md'. */
   path: string;
-  /** Year of the post's last git commit, e.g. 2026. */
-  year: number;
   /** Commit date as YYYY-MM-DD, e.g. 2026-01-30. */
   date: string;
+  /**
+   * Whether the post appears in the blog index and RSS feed. Only posts
+   * inside a numeric directory (e.g. \d+/my-post.md) are listed; other
+   * top-level files are still routable but unlisted.
+   */
+  indexed: boolean;
 }
 
 const postsDir = join(import.meta.dirname, 'posts');
@@ -54,13 +59,11 @@ function getPostMetas(): PostMeta[] {
       ).trim();
       if (!out) continue; // No commit for this file yet — skip it.
       const date = out.split('\n')[0];
-      // Leading YYYY/ directory wins over the git date.
-      const dirYear = file.match(/^(\d{4})\//)?.[1];
       metas.push({
-        slug: file.split('/').pop()!.replace(/\.md$/, ''),
+        urlPath: file.replace(/\.md$/, ''),
         path: file,
-        year: Number(dirYear ?? date.slice(0, 4)),
         date,
+        indexed: /^\d+\//.test(file),
       });
     } catch {
       // Not a git repo or git unavailable — skip.
@@ -77,12 +80,12 @@ const virtualPostMeta = 'virtual:post-meta';
 // (RSS requires absolute link elements). Adjust when deploying.
 export const SITE_URL = 'https://example.com';
 
-// Public location of the posts repo's assets. Markdown image refs are
-// rewritten to this prefix (see src/lib/blog.ts).
-export const POST_ASSETS_PREFIX = '/assets/posts';
+// Public location of the posts repo's assets: the site root. Markdown image
+// refs are rewritten to root-relative paths mirroring the posts/ structure
+// (see src/lib/blog.ts), e.g. posts/img/foo.png -> /img/foo.png.
 
 // All non-markdown files in the posts repo (recursively). These are the
-// posts' embeddable assets, served at /assets/posts/<rel>.
+// posts' embeddable assets, served at /<rel>.
 function postAssetFiles(): string[] {
   return readdirSync(postsDir, { recursive: true, encoding: 'utf-8' })
     .map((f) => f.replaceAll('\\', '/'))
@@ -113,21 +116,27 @@ function mimeTypeOf(path: string): string {
   return MIME_TYPES[path.slice(path.lastIndexOf('.')).toLowerCase()] ?? 'application/octet-stream';
 }
 
-// Serves the posts repo's assets at /assets/posts/<rel> (rel = path inside
-// the posts repo).
+// Serves the posts repo's assets at /<rel> (rel = path inside the posts
+// repo).
 //
 // The posts/ directory is its own repo with its own internal structure;
 // authors reference images relatively (e.g. ![](img/foo.png)), and those refs
-// are rewritten (see src/lib/blog.ts) to this global asset location:
+// are rewritten (see src/lib/blog.ts) to root-relative URLs that mirror the
+// posts/ layout:
 //   - dev: middleware reads straight from posts/
-//   - build: files are copied to dist/assets/posts/
+//   - build: files are copied to dist/client/<rel>
 function postsAssetsPlugin(): Plugin {
   return {
     name: 'post-assets-server',
     configureServer(server) {
-      server.middlewares.use(`${POST_ASSETS_PREFIX}/`, (req, res, next) => {
-        // req.url here is stripped of the mount prefix, e.g. 'img/foo.png'.
-        const rel = decodeURIComponent((req.url ?? '').split('?')[0].replace(/^\//, ''));
+      server.middlewares.use((req, res, next) => {
+        const url = (req.url ?? '').split('?')[0];
+        // Only handle paths that don't belong to Vite/app code. App code
+        // lives under /src, /@fs, /@id, /node_modules and known routes.
+        if (!url.startsWith('/') || url.startsWith('/@') || url.startsWith('/src/') || url.startsWith('/node_modules/')) {
+          return next();
+        }
+        const rel = decodeURIComponent(url.replace(/^\//, ''));
         if (!rel || rel.includes('..')) return next();
         try {
           const data = readFileSync(join(postsDir, rel));
@@ -145,7 +154,7 @@ function postsAssetsPlugin(): Plugin {
       for (const rel of postAssetFiles()) {
         this.emitFile({
           type: 'asset',
-          fileName: `${POST_ASSETS_PREFIX.replace(/^\//, '')}/${rel}`,
+          fileName: rel,
           source: readFileSync(join(postsDir, rel)),
         });
       }
@@ -170,9 +179,11 @@ function rssPlugin(): Plugin {
         copyright: '',
       });
 
-      // Newest first.
-      for (const meta of [...postMetas].sort((a, b) => b.date.localeCompare(a.date))) {
-        const url = `${SITE_URL}/${meta.year}/${meta.slug}/`;
+      // Newest first. Only indexed posts appear in the feed.
+      for (const meta of [...postMetas]
+        .filter((m) => m.indexed)
+        .sort((a, b) => b.date.localeCompare(a.date))) {
+        const url = `${SITE_URL}/${meta.urlPath}/`;
         // Use the post's `# Heading` as the title; fall back to the slug.
         const md = readFileSync(join(postsDir, meta.path), 'utf-8');
         const title = md.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? meta.slug;
@@ -224,10 +235,10 @@ export default defineConfig({
         // Extract links from prerendered HTML and prerender those too.
         crawlLinks: true,
       },
-      // Explicitly prerender every blog post at /<year>/<slug>/. Years come
-      // from the posts/ git repo's last-commit dates.
+      // Explicitly prerender every committed post at /<urlPath>/, including
+      // unlisted ones. Paths mirror the posts/ directory structure.
       pages: postMetas.map((meta) => ({
-        path: `/${meta.year}/${meta.slug}/`,
+        path: `/${meta.urlPath}/`,
       })),
     }),
     // vite-plugin-solid in SSR mode — the supported Solid plugin for

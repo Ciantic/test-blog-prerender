@@ -5,13 +5,16 @@ function Home() {
   // Typed by the loader's return type.
   const posts = Route.useLoaderData();
 
-  // Group posts by publish year for the year-marked list layout.
+  // Group posts by year (from their URL path's leading segment or the post
+  // date) for the year-marked list layout.
   const byYear = () => {
     const groups = new Map<number, BlogIndexEntry[]>();
     for (const post of posts()) {
-      const list = groups.get(post.year);
+      const year =
+        Number(post.urlPath.match(/^(\d{4})\//)?.[1]) || Number(post.date.slice(0, 4));
+      const list = groups.get(year);
       if (list) list.push(post);
-      else groups.set(post.year, [post]);
+      else groups.set(year, [post]);
     }
     return [...groups.entries()].sort((a, b) => b[0] - a[0]);
   };
@@ -35,8 +38,8 @@ function Home() {
             {yearPosts.map((post) => (
               <li class="border-b border-base-content/10 last:border-b-0">
                 <Link
-                  to="/$year/$slug/"
-                  params={{ year: String(post.year), slug: post.slug }}
+                  to="/$"
+                  params={{ _splat: post.urlPath }}
                   class="group flex items-baseline gap-6 py-5 transition-colors"
                 >
                   <time

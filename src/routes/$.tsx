@@ -22,16 +22,18 @@ function PostPage() {
   );
 }
 
-export const Route = createFileRoute('/$year/$slug')({
-  // 404s if there's no post for that year/slug combination.
+export const Route = createFileRoute('/$')({
+  // Splat route: the whole URL path (minus leading slash) is `params._splat`,
+  // e.g. /2026/hello-world/ -> '2026/hello-world'. This mirrors the posts/
+  // directory structure exactly. 404s if there's no post for that path.
   beforeLoad: ({ params }) => {
-    if (!getPost(params.year, params.slug)) {
+    if (!getPost(params._splat ?? '')) {
       throw new Error('Post not found');
     }
   },
-  loader: ({ params }) => getPost(params.year, params.slug)!,
+  loader: ({ params }) => getPost(params._splat ?? '')!,
   head: ({ params }) => ({
-    meta: [{ title: `${params.slug} - Solid App` }],
+    meta: [{ title: `${params._splat?.split('/').pop()} - Solid App` }],
   }),
   component: PostPage,
 });

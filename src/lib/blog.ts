@@ -2,22 +2,21 @@
 //
 // Posts live as markdown files in the `posts/` directory (its own git repo).
 // The markdown is inlined at build time via Vite's `import.meta.glob`, and
-// each post's publish year comes from its last git commit date, provided by
-// the `virtual:post-meta` module (see vite.config.ts). Posts without a git
+// each post's publish date comes from its git add date, provided by the
+// `virtual:post-meta` module (see vite.config.ts). Posts without a git
 // commit are excluded from the virtual module and therefore from the blog.
 //
-// URLs are /<year>/<slug>/, e.g. /2026/hello-world/.
+// The URL structure mirrors the posts/ directory exactly:
+//   posts/foo.md              -> /foo/
+//   posts/2026/my-post.md     -> /2026/my-post/
+//   posts/img/test-image.png  -> /img/test-image.png
 
 import { marked } from 'marked';
 import { postMetas } from 'virtual:post-meta';
 
-// Must match POST_ASSETS_PREFIX in vite.config.ts.
-const POST_ASSETS_PREFIX = '/assets/posts';
-
 export interface BlogPost {
-  slug: string;
-  /** Year of the post's last git commit. */
-  year: number;
+  /** URL path (no leading/trailing slash), e.g. '2026/my-post'. */
+  urlPath: string;
   /** Commit date as YYYY-MM-DD, e.g. 2026-01-30. */
   date: string;
   title: string;
@@ -27,8 +26,7 @@ export interface BlogPost {
 }
 
 export interface BlogIndexEntry {
-  slug: string;
-  year: number;
+  urlPath: string;
   date: string;
   title: string;
   excerpt: string;
@@ -42,9 +40,9 @@ const modules = import.meta.glob('/posts/**/*.md', {
   eager: true,
 }) as Record<string, string>;
 
-function slugFromPath(path: string): string {
-  // '/posts/2026/foo.md' -> 'foo' — directories never appear in URLs.
-  return path.split('/').pop()!.replace(/\.md$/, '');
+/** '/posts/2026/foo.md' -> '2026/foo' */
+function urlPathFromPath(path: string): string {
+  return path.replace(/^\/posts\//, '').replace(/\.md$/, '');
 }
 
 /** Directory of a markdown file inside posts/, '' if top-level. */
@@ -54,10 +52,12 @@ function dirFromPath(path: string): string {
 }
 
 /** First `# Heading` line, or a title-cased fallback derived from the slug. */
-function extractTitle(markdown: string, slug: string): string {
+function extractTitle(markdown: string, urlPath: string): string {
   const match = markdown.match(/^#\s+(.+)$/m);
   if (match) return match[1].trim();
-  return slug
+  return urlPath
+    .split('/')
+    .pop()!
     .split('-')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
@@ -94,14 +94,11 @@ function resolveRelative(fromDir: string, target: string): string | undefined {
 }
 
 /**
- * Rewrite references in a post's *rendered HTML* so the posts repo's
- * internal structure maps onto the blog's URL structure:
+ * Rewrite references in a post's *rendered HTML* so relative refs map onto
+ * the site's URL structure (which mirrors the posts/ layout):
  *
- *   <a href="./other.md">     -> /<year>/other/          (post-to-post links)
- *   <img src="img/foo.png"> -> /assets/posts/img/foo.png (embedded assets)
- *
- * Assets are served from a single global location mirroring the posts repo's
- * structure (served/copied by postsAssetsPlugin in vite.config.ts).
+ *   <a href="./other.md">     -> /other/          (post-to-post links)
+ *   <img src="img/foo.png">   -> /img/foo.png     (embedded assets)
  *
  * Doing this after markdown->HTML conversion is more robust than regexing
  * the markdown source: marked normalizes every link syntax (inline,
@@ -110,52 +107,55 @@ function resolveRelative(fromDir: string, target: string): string | undefined {
  * External URLs, absolute paths and anchors are left untouched.
  */
 function rewriteRefs(html: string, dir: string): string {
-  const metaBySlug = new Map(postMetas.map((m) => [m.slug, m]));
+  const metaByUrlPath = new Map(postMetas.map((m) => [m.urlPath, m]));
 
   return html.replace(/\b(src|href)="([^"]*)"/g, (_all, attr: string, target: string) => {
     const resolved = resolveRelative(dir, target);
     if (!resolved) return _all;
-    if (attr === 'src') {
-      // Embedded asset: rebase onto the global posts asset location.
-      return `${attr}="${POST_ASSETS_PREFIX}/${resolved}"`;
-    }
     if (resolved.endsWith('.md')) {
       // Link to another post: translate to its blog URL.
-      const meta = metaBySlug.get(resolved.replace(/\.md$/, ''));
-      if (meta) return `${attr}="/${meta.year}/${meta.slug}/"`;
+      const meta = metaByUrlPath.get(resolved.replace(/\.md$/, ''));
+      if (meta) return `${attr}="/${meta.urlPath}/"`;
     }
-    return `${attr}="/${resolved}"`; // Non-md relative link — root-relative path.
+    // Assets and other files live at the root, mirroring posts/.
+    return `${attr}="/${resolved}"`;
   });
 }
 
-const metaBySlug = new Map(postMetas.map((meta) => [meta.slug, meta]));
+const metaByUrlPath = new Map(postMetas.map((meta) => [meta.urlPath, meta]));
 
 // Only include posts that have a git commit (i.e. appear in postMetas).
 const posts = Object.entries(modules)
   .map(([path, markdown]) => {
-    const slug = slugFromPath(path);
+    const urlPath = urlPathFromPath(path);
     const dir = dirFromPath(path);
-    const meta = metaBySlug.get(slug);
+    const meta = metaByUrlPath.get(urlPath);
     if (!meta) return undefined; // Uncommitted — skip.
     return {
-      slug,
-      year: meta.year,
+      urlPath,
       date: meta.date,
-      title: extractTitle(markdown, slug),
+      title: extractTitle(markdown, urlPath),
       excerpt: extractExcerpt(markdown),
       html: rewriteRefs(marked.parse(markdown, { async: false }) as string, dir),
     };
   })
   .filter((post): post is BlogPost => post !== undefined);
 
-const byYearSlug = new Map(posts.map((post) => [`${post.year}/${post.slug}`, post]));
+const byUrlPath = new Map(posts.map((post) => [post.urlPath, post]));
 
 export function getPosts(): BlogIndexEntry[] {
-  return posts.map(({ slug, year, date, title, excerpt }) => ({ slug, year, date, title, excerpt }));
+  // Only posts inside a numeric directory (e.g. 2026/foo.md) are listed;
+  // other committed posts are routable but unlisted.
+  return postMetas
+    .filter((meta) => meta.indexed)
+    .map((meta) => byUrlPath.get(meta.urlPath))
+    .filter((post): post is BlogPost => post !== undefined)
+    .map(({ urlPath, date, title, excerpt }) => ({ urlPath, date, title, excerpt }));
 }
 
-export function getPost(year: number | string, slug: string): BlogPost | undefined {
-  return byYearSlug.get(`${year}/${slug}`);
+/** Looks up a post by its URL path, e.g. getPost('2026/hello-world'). */
+export function getPost(urlPath: string): BlogPost | undefined {
+  return byUrlPath.get(urlPath);
 }
 
 /** Formats a YYYY-MM-DD date in Finnish style, e.g. 30.1.2026. */
