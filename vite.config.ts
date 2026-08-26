@@ -3,7 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import solid from 'vite-plugin-solid';
 import { execFileSync } from 'node:child_process';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Feed } from 'feed';
 import type { Plugin } from 'vite';
@@ -36,14 +36,12 @@ export interface PostMeta {
 const postsDir = join(import.meta.dirname, 'posts');
 
 /** All files under posts/ recursively, as slash-separated relative paths. */
-function listPostFiles(): string[] {
-  return readdirSync(postsDir, { recursive: true, encoding: 'utf-8' }).map((f) =>
-    f.replaceAll('\\', '/'),
-  );
-}
+const postFiles = readdirSync(postsDir, { recursive: true, encoding: 'utf-8', withFileTypes: true })
+  .filter((d) => d.isFile())
+  .map((d) => join(d.parentPath, d.name).slice(postsDir.length + 1).replaceAll('\\', '/'));
 
 function getPostMetas(): PostMeta[] {
-  const files = listPostFiles().filter((f) => f.endsWith('.md'));
+  const files = postFiles.filter((f) => f.endsWith('.md'));
 
   const metas: PostMeta[] = [];
   for (const file of files) {
@@ -84,19 +82,6 @@ const virtualPostMeta = 'virtual:post-meta';
 // Canonical site origin. Used to build absolute URLs in the RSS feed
 // (RSS requires absolute link elements). Adjust when deploying.
 export const SITE_URL = 'https://example.com';
-
-// All non-markdown files in the posts repo (recursively). These are the
-// posts' embeddable assets, served at /<rel> mirroring the posts/ layout.
-function postAssetFiles(): string[] {
-  return listPostFiles().filter((f) => {
-    if (f.endsWith('.md')) return false;
-      try {
-        return statSync(join(postsDir, f)).isFile();
-      } catch {
-        return false;
-      }
-    });
-}
 
 const MIME_TYPES: Record<string, string> = {
   '.png': 'image/png',
@@ -146,7 +131,7 @@ function postsAssetsPlugin(): Plugin {
     generateBundle() {
       // Only the client build produces deployable static assets.
       if (this.environment.name !== 'client') return;
-      for (const rel of postAssetFiles()) {
+      for (const rel of postFiles.filter((f) => !f.endsWith('.md'))) {
         this.emitFile({
           type: 'asset',
           fileName: rel,
