@@ -10,4 +10,6 @@ declare module 'virtual:post-meta' {
     indexed: boolean;
   }
   export const postMetas: PostMeta[];
+  /** Image dimensions keyed by path inside posts/, e.g. '2026/img/test-image.png'. */
+  export const imageDims: Record<string, { width: number; height: number }>;
 }

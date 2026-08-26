@@ -5,7 +5,8 @@
 //   posts/img/test-image.png  -> /2026/img/test-image.png
 
 import { marked } from 'marked';
-import { postMetas } from 'virtual:post-meta';
+import type { Renderer, Tokens } from 'marked';
+import { postMetas, imageDims } from 'virtual:post-meta';
 
 export interface BlogPost {
   /** URL path (no leading/trailing slash), e.g. '2026/my-post'. */
@@ -75,6 +76,34 @@ function rewriteRefs(html: string): string {
   });
 }
 
+/**
+ * Custom image renderer that adds width/height attributes from the
+ * build-time-measured dimensions (see vite.config.ts). Markdown image srcs
+ * are relative to the post's own directory, so they're resolved against it
+ * before looking up the dimensions map (keyed by path inside posts/).
+ * Images without a known size render unchanged.
+ *
+ * marked.use() merges the renderer (a partial `renderer` option in parse()
+ * would replace the whole one), so the post's directory is passed via a
+ * module-level variable set before each parse.
+ */
+let currentPostDir = '';
+marked.use({
+  renderer: {
+    image(this: Renderer, token: Tokens.Image): string {
+      const clean = token.href.replace(/^\.\//, '');
+      const dims = imageDims[`${currentPostDir}${clean}`];
+      const dimsAttr = dims ? ` width="${dims.width}" height="${dims.height}"` : '';
+      return `<img src="${token.href}" alt="${token.text ?? ''}"${dimsAttr}>`;
+    },
+  },
+});
+
+function renderMarkdown(markdown: string, urlPath: string): string {
+  currentPostDir = urlPath.includes('/') ? `${urlPath.split('/').slice(0, -1).join('/')}/` : '';
+  return marked.parse(markdown, { async: false }) as string;
+}
+
 const metaByUrlPath = new Map(postMetas.map((meta) => [meta.urlPath, meta]));
 
 // Only include posts that have a git commit (i.e. appear in postMetas).
@@ -88,7 +117,7 @@ const posts = Object.entries(modules)
       date: meta.date,
       title: extractTitle(markdown, urlPath),
       excerpt: extractExcerpt(markdown),
-      html: rewriteRefs(marked.parse(markdown, { async: false }) as string),
+      html: rewriteRefs(renderMarkdown(markdown, urlPath)),
     };
   })
   .filter((post): post is BlogPost => post !== undefined);

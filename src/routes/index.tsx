@@ -38,7 +38,7 @@ function Home() {
             {yearPosts.map((post) => (
               <li class="border-b border-base-content/10 last:border-b-0">
                 <Link
-                  to="/$"
+                  to="/$/"
                   params={{ _splat: post.urlPath }}
                   class="group flex items-baseline gap-6 py-5 transition-colors"
                 >

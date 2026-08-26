@@ -7,6 +7,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
 import { Feed } from 'feed';
+import { lookup as mimeTypeOf } from 'mime-types';
+import { imageSize } from 'image-size';
 import type { Plugin } from 'vite';
 
 // --- Git-derived post metadata -------------------------------------------
@@ -83,28 +85,31 @@ async function getPostMetas(): Promise<PostMeta[]> {
 
 const postMetas = await getPostMetas();
 
+// --- Image dimensions ------------------------------------------------------
+//
+// Measures every image in posts/ once at config time so markdown-rendered
+// <img> tags can include width/height (prevents layout shift / CLS).
+// Keyed by the path inside posts/, e.g. '2026/img/test-image.png'.
+const imageDims: Record<string, { width: number; height: number }> = {};
+for (const rel of postFiles) {
+  if (!/\.(png|jpe?g|gif|webp|avif|svg)$/i.test(rel)) continue;
+  try {
+    const dims = imageSize(readFileSync(join(postsDir, rel)));
+    // SVGs from image-size report width/height only when set explicitly.
+    if (dims.width && dims.height) {
+      imageDims[rel] = { width: dims.width, height: dims.height };
+    }
+  } catch {
+    // Unreadable or unsupported image — leave it without dimensions.
+  }
+}
+
 const virtualPostMeta = 'virtual:post-meta';
 
 // Canonical site origin. Used to build absolute URLs in the RSS feed
 // (RSS requires absolute link elements). Adjust when deploying.
 export const SITE_URL = 'https://example.com';
 
-const MIME_TYPES: Record<string, string> = {
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.avif': 'image/avif',
-  '.svg': 'image/svg+xml',
-  '.mp4': 'video/mp4',
-  '.webm': 'video/webm',
-  '.pdf': 'application/pdf',
-};
-
-function mimeTypeOf(path: string): string {
-  return MIME_TYPES[path.slice(path.lastIndexOf('.')).toLowerCase()] ?? 'application/octet-stream';
-}
 
 // Serves the posts repo's non-markdown files one-to-one at /<rel> (rel =
 // path inside the posts repo), so post assets like images are reachable at
@@ -126,7 +131,7 @@ function postsAssetsPlugin(): Plugin {
         if (!rel || rel.includes('..')) return next();
         try {
           const data = readFileSync(join(postsDir, rel));
-          res.setHeader('Content-Type', mimeTypeOf(rel));
+          res.setHeader('Content-Type', mimeTypeOf(rel) || 'application/octet-stream');
           res.setHeader('Cache-Control', 'no-cache');
           res.end(data);
         } catch {
@@ -197,7 +202,10 @@ function postMetaPlugin(): Plugin {
     },
     load(id) {
       if (id !== resolvedId) return;
-      return `export const postMetas = ${JSON.stringify(postMetas)};`;
+      return [
+        `export const postMetas = ${JSON.stringify(postMetas)};`,
+        `export const imageDims = ${JSON.stringify(imageDims)};`,
+      ].join('\n');
     },
   };
 }
