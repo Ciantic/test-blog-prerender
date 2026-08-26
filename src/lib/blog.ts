@@ -11,6 +11,9 @@
 import { marked } from 'marked';
 import { postMetas } from 'virtual:post-meta';
 
+// Must match POST_ASSETS_PREFIX in vite.config.ts.
+const POST_ASSETS_PREFIX = '/assets/posts';
+
 export interface BlogPost {
   slug: string;
   /** Year of the post's last git commit. */
@@ -31,17 +34,23 @@ export interface BlogIndexEntry {
   excerpt: string;
 }
 
-// Load every markdown file under posts/ as a raw string. Eager so we can
-// build the index synchronously on both server and client.
-const modules = import.meta.glob('/posts/*.md', {
+// Load every markdown file under posts/ (recursively) as a raw string. Eager
+// so we can build the index synchronously on both server and client.
+const modules = import.meta.glob('/posts/**/*.md', {
   query: '?raw',
   import: 'default',
   eager: true,
 }) as Record<string, string>;
 
 function slugFromPath(path: string): string {
-  const file = path.split('/').pop() ?? path;
-  return file.replace(/\.md$/, '');
+  // '/posts/2026/foo.md' -> 'foo' — directories never appear in URLs.
+  return path.split('/').pop()!.replace(/\.md$/, '');
+}
+
+/** Directory of a markdown file inside posts/, '' if top-level. */
+function dirFromPath(path: string): string {
+  const rel = path.replace(/^\/posts\//, '');
+  return rel.includes('/') ? rel.slice(0, rel.lastIndexOf('/')) : '';
 }
 
 /** First `# Heading` line, or a title-cased fallback derived from the slug. */
@@ -64,12 +73,68 @@ function extractExcerpt(markdown: string): string {
   return paragraph.replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * Resolve a link/image target like './foo.md' or '../img/x.png' against the
+ * directory of the markdown file that contains it. Returns a normalized,
+ * posts-repo-root-relative path (no leading slash), or undefined for
+ * absolute/external/anchor targets.
+ */
+function resolveRelative(fromDir: string, target: string): string | undefined {
+  if (/^(https?:)?\/\//i.test(target) || target.startsWith('/') || target.startsWith('#')) {
+    return undefined;
+  }
+  const parts = `${fromDir}/${target}`.split('/');
+  const out: string[] = [];
+  for (const part of parts) {
+    if (!part || part === '.') continue;
+    if (part === '..') out.pop();
+    else out.push(part);
+  }
+  return out.join('/');
+}
+
+/**
+ * Rewrite references in a post's *rendered HTML* so the posts repo's
+ * internal structure maps onto the blog's URL structure:
+ *
+ *   <a href="./other.md">     -> /<year>/other/          (post-to-post links)
+ *   <img src="img/foo.png"> -> /assets/posts/img/foo.png (embedded assets)
+ *
+ * Assets are served from a single global location mirroring the posts repo's
+ * structure (served/copied by postsAssetsPlugin in vite.config.ts).
+ *
+ * Doing this after markdown->HTML conversion is more robust than regexing
+ * the markdown source: marked normalizes every link syntax (inline,
+ * reference-style, titles, angle brackets) into plain src/href attributes.
+ *
+ * External URLs, absolute paths and anchors are left untouched.
+ */
+function rewriteRefs(html: string, dir: string): string {
+  const metaBySlug = new Map(postMetas.map((m) => [m.slug, m]));
+
+  return html.replace(/\b(src|href)="([^"]*)"/g, (_all, attr: string, target: string) => {
+    const resolved = resolveRelative(dir, target);
+    if (!resolved) return _all;
+    if (attr === 'src') {
+      // Embedded asset: rebase onto the global posts asset location.
+      return `${attr}="${POST_ASSETS_PREFIX}/${resolved}"`;
+    }
+    if (resolved.endsWith('.md')) {
+      // Link to another post: translate to its blog URL.
+      const meta = metaBySlug.get(resolved.replace(/\.md$/, ''));
+      if (meta) return `${attr}="/${meta.year}/${meta.slug}/"`;
+    }
+    return `${attr}="/${resolved}"`; // Non-md relative link — root-relative path.
+  });
+}
+
 const metaBySlug = new Map(postMetas.map((meta) => [meta.slug, meta]));
 
 // Only include posts that have a git commit (i.e. appear in postMetas).
 const posts = Object.entries(modules)
   .map(([path, markdown]) => {
     const slug = slugFromPath(path);
+    const dir = dirFromPath(path);
     const meta = metaBySlug.get(slug);
     if (!meta) return undefined; // Uncommitted — skip.
     return {
@@ -78,7 +143,7 @@ const posts = Object.entries(modules)
       date: meta.date,
       title: extractTitle(markdown, slug),
       excerpt: extractExcerpt(markdown),
-      html: marked.parse(markdown, { async: false }) as string,
+      html: rewriteRefs(marked.parse(markdown, { async: false }) as string, dir),
     };
   })
   .filter((post): post is BlogPost => post !== undefined);
