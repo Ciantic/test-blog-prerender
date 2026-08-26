@@ -1,17 +1,18 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
-/* bumblebee is the default theme; sunset kicks in automatically when the
-   user's OS/browser reports a dark color-scheme preference. */
+
+@theme {
+  --font-sans: Verdana, 'Geneva', 'DejaVu Sans', sans-serif;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  margin-top: 1em;
+  margin-bottom: 0.1em;
+}
+
 @plugin 'daisyui' {
   themes: bumblebee --default, sunset --prefersdark;
 }
-
-/* Re-declaring a built-in theme name overrides individual tokens.
-   Nord ships a near-black --color-primary-content (~#2E3440) which makes
-   btn-primary text nearly unreadable on its blue primary (#5E81AC),
-   so swap it for a light tone from the same palette (Snow Storm). */
-/* @plugin 'daisyui/theme' {
-  name: 'nord';
-  default: true;
-  --color-primary-content: oklch(93% 0.012 255.508);
-} */
