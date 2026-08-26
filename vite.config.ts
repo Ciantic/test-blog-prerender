@@ -2,8 +2,9 @@ import { tanstackStart } from '@tanstack/solid-start/plugin/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import solid from 'vite-plugin-solid';
-import { execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
+import { promisify } from 'node:util';
 import { join } from 'node:path';
 import { Feed } from 'feed';
 import type { Plugin } from 'vite';
@@ -40,42 +41,47 @@ const postFiles = readdirSync(postsDir, { recursive: true, encoding: 'utf-8', wi
   .filter((d) => d.isFile())
   .map((d) => join(d.parentPath, d.name).slice(postsDir.length + 1).replaceAll('\\', '/'));
 
-function getPostMetas(): PostMeta[] {
+const execFileAsync = promisify(execFile);
+
+async function getPostMetas(): Promise<PostMeta[]> {
   const files = postFiles.filter((f) => f.endsWith('.md'));
 
-  const metas: PostMeta[] = [];
-  for (const file of files) {
-    try {
-      const out = execFileSync(
-        'git',
-        [
-          'log',
-          // Only the commit that added the file — its creation date, so
-          // later edits don't change the post's date metadata.
-          '--diff-filter=A',
-          '--format=%ad',
-          '--date=format:%Y-%m-%d',
-          '--',
-          file,
-        ],
-        { cwd: postsDir, encoding: 'utf-8' },
-      ).trim();
-      if (!out) continue; // No commit for this file yet — skip it.
-      const date = out.split('\n')[0];
-      metas.push({
-        urlPath: file.replace(/\.md$/, ''),
-        path: file,
-        date,
-        indexed: /^\d+\//.test(file),
-      });
-    } catch {
-      // Not a git repo or git unavailable — skip.
-    }
-  }
-  return metas;
+  // Run all git queries concurrently — each is an independent process spawn.
+  const results = await Promise.all(
+    files.map(async (file): Promise<PostMeta | null> => {
+      try {
+        const { stdout } = await execFileAsync(
+          'git',
+          [
+            'log',
+            // Only the commit that added the file — its creation date, so
+            // later edits don't change the post's date metadata.
+            '--diff-filter=A',
+            '--format=%ad',
+            '--date=format:%Y-%m-%d',
+            '--',
+            file,
+          ],
+          { cwd: postsDir, encoding: 'utf-8' },
+        );
+        const out = stdout.trim();
+        if (!out) return null; // No commit for this file yet — skip it.
+        const date = out.split('\n')[0];
+        return {
+          urlPath: file.replace(/\.md$/, ''),
+          path: file,
+          date,
+          indexed: /^\d+\//.test(file),
+        };
+      } catch {
+        return null; // Not a git repo or git unavailable — skip.
+      }
+    }),
+  );
+  return results.filter((m) => m !== null);
 }
 
-const postMetas = getPostMetas();
+const postMetas = await getPostMetas();
 
 const virtualPostMeta = 'virtual:post-meta';
 
