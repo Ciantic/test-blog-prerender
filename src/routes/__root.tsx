@@ -33,7 +33,10 @@ export const Route = createRootRoute({
         <div class="navbar-center">
           <ul class="menu menu-horizontal gap-1">
             <li>
-              <Link to="/">Home</Link>
+              <Link to="/">All posts</Link>
+            </li>
+            <li>
+              <Link to="/about/">About</Link>
             </li>
           </ul>
         </div>
@@ -66,6 +69,9 @@ export const Route = createRootRoute({
         <nav class="flex gap-4">
           <Link to="/" class="link link-hover">
             Home
+          </Link>
+          <Link to="/about/" class="link link-hover">
+            About
           </Link>
           <a href="/rss.xml" class="link link-hover">
             RSS
