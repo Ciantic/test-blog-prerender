@@ -4,3 +4,5 @@ minimumReleaseAgeExclude:
   - '@tanstack/solid-start-client@2.0.0-rc.2'
   - '@tanstack/solid-start-server@2.0.0-rc.2'
   - '@tanstack/solid-start@2.0.0-rc.2'
+  - '@solidjs/signals@2.0.0-rc.3'
+  - solid-js@2.0.0-rc.3
