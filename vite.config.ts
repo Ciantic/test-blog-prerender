@@ -4,6 +4,7 @@ import { defineConfig } from 'vitest/config';
 import solid from 'vite-plugin-solid';
 import { execFile } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
 import { Feed } from 'feed';
@@ -90,19 +91,24 @@ const postMetas = await getPostMetas();
 // Measures every image in posts/ once at config time so markdown-rendered
 // <img> tags can include width/height (prevents layout shift / CLS).
 // Keyed by the path inside posts/, e.g. '2026/img/test-image.png'.
-const imageDims: Record<string, { width: number; height: number }> = {};
-for (const rel of postFiles) {
-  if (!/\.(png|jpe?g|gif|webp|avif|svg)$/i.test(rel)) continue;
-  try {
-    const dims = imageSize(readFileSync(join(postsDir, rel)));
-    // SVGs from image-size report width/height only when set explicitly.
-    if (dims.width && dims.height) {
-      imageDims[rel] = { width: dims.width, height: dims.height };
-    }
-  } catch {
-    // Unreadable or unsupported image — leave it without dimensions.
-  }
+async function getImageDims(): Promise<Record<string, { width: number; height: number }>> {
+  const imageFiles = postFiles.filter((rel) => /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(rel));
+  const results = await Promise.all(
+    imageFiles.map(async (rel) => {
+      try {
+        const dims = imageSize(await readFile(join(postsDir, rel)));
+        // SVGs from image-size report width/height only when set explicitly.
+        if (dims.width && dims.height) return [rel, { width: dims.width, height: dims.height }] as const;
+        return null;
+      } catch {
+        return null; // Unreadable or unsupported image — leave it without dimensions.
+      }
+    }),
+  );
+  return Object.fromEntries(results.filter((r) => r !== null));
 }
+
+const imageDims = await getImageDims();
 
 const virtualPostMeta = 'virtual:post-meta';
 
