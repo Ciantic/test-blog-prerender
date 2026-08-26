@@ -14,26 +14,26 @@
   "license": "MIT",
   "devDependencies": {
     "@solidjs/testing-library": "1.0.0-beta.2",
-    "@solidjs/vite-plugin": "^3.0.0-next.29",
+    "@solidjs/vite-plugin": "3.0.0-next.32",
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.3",
-    "@tanstack/router-plugin": "1.168.27",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@types/node": "^26.2.0",
+    "@tanstack/router-plugin": "1.168.35",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@types/node": "^26.3.0",
     "daisyui": "^5.7.22",
     "feed": "^6.0.0",
     "jsdom": "^25.0.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.2",
-    "vite": "^8.1.5",
+    "vite": "^8.2.2",
     "vite-plugin-solid": "3.0.0-next.27",
-    "vitest": "^4.0.0"
+    "vitest": "^4.1.11"
   },
   "dependencies": {
-    "@solidjs/web": "^2.0.0-rc.0",
-    "@tanstack/solid-router": "^2.0.0-rc.0",
-    "@tanstack/solid-start": "2.0.0-rc.0",
+    "@solidjs/web": "2.0.0-rc.3",
+    "@tanstack/solid-router": "2.0.0-rc.1",
+    "@tanstack/solid-start": "2.0.0-rc.2",
     "marked": "^18.0.11",
-    "solid-js": "^2.0.0-rc.0"
+    "solid-js": "2.0.0-rc.2"
   }
 }

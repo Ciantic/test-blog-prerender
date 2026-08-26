@@ -1,0 +1,6 @@
+minimumReleaseAgeExclude:
+  - '@solidjs/web@2.0.0-rc.3'
+  - '@tanstack/solid-router@2.0.0-rc.2'
+  - '@tanstack/solid-start-client@2.0.0-rc.2'
+  - '@tanstack/solid-start-server@2.0.0-rc.2'
+  - '@tanstack/solid-start@2.0.0-rc.2'
