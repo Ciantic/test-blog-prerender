@@ -31,7 +31,7 @@ function AboutPage() {
   );
 }
 
-export const Route = createFileRoute('/about')({
+export const Route = createFileRoute('/about/')({
   head: () => ({ meta: [{ title: 'About - Solid App' }] }),
   component: AboutPage,
 });
