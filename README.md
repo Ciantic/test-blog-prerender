@@ -9,4 +9,20 @@ pnpm build          # build + prerender static site into dist/client
 pnpm serve:static   # serve prerendered dist/client at http://localhost:4173
 ```
 
-To add your own posts, make a new repository, and symbolic link it into the `posts` folder.
+To add your own posts, make a new repository, and symbolic link it into the `posts` folder. In this example posts are not in separate repository, but tucked in this same repository.
+
+## Currently implemented
+
+- Directory structure for posts is mirrored from the `posts` directory.
+- Each post is a `.md` and is rendered into a static page.
+- Post publish date is read from git repository commit history.
+- Everything is prerendered
+- Pages load without JavaScript
+- RSS feed (basic, no paging)
+- Blog index (basic, no paging)
+
+
+## Not implemented
+
+- Reading frontmatter, e.g. different publish date than in git repository
+- Excerpt from frontmatter
