@@ -162,38 +162,52 @@ function postsAssetsPlugin(): Plugin {
 // Emits /rss.xml as a plain static asset at build time. Doing this in Vite
 // (rather than as a route) keeps the feed outside TanStack Start's HTML
 // document shell — it's raw XML, not a page.
+// Builds the RSS feed from committed, indexed posts. Shared by the build
+// plugin (emits rss.xml as a static asset) and the dev middleware.
+function buildRssXml(): string {
+  const feed = new Feed({
+    title: 'My Blog',
+    description: 'Static-prerendered Solid blog demo.',
+    id: `${SITE_URL}/`,
+    link: `${SITE_URL}/`,
+    language: 'fi',
+    copyright: '',
+  });
+
+  // Newest first. Only indexed posts appear in the feed.
+  for (const meta of [...postMetas]
+    .filter((m) => m.indexed)
+    .sort((a, b) => b.date.localeCompare(a.date))) {
+    const url = `${SITE_URL}/${meta.urlPath}/`;
+    // Use the post's `# Heading` as the title; fall back to the slug.
+    const md = readFileSync(join(postsDir, meta.path), 'utf-8');
+    const title =
+      md.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? meta.urlPath.split('/').pop()!;
+    feed.addItem({
+      title,
+      id: url,
+      link: url,
+      date: new Date(`${meta.date}T00:00:00Z`),
+    });
+  }
+
+  return feed.rss2();
+}
+
 function rssPlugin(): Plugin {
   return {
     name: 'rss-xml-generator',
-    apply: 'build',
-    generateBundle() {
-      const feed = new Feed({
-        title: 'My Blog',
-        description: 'Static-prerendered Solid blog demo.',
-        id: `${SITE_URL}/`,
-        link: `${SITE_URL}/`,
-        language: 'fi',
-        copyright: '',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = (req.url ?? '').split('?')[0];
+        if (url !== '/rss.xml') return next();
+        res.setHeader('Content-Type', 'application/rss+xml; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.end(buildRssXml());
       });
-
-      // Newest first. Only indexed posts appear in the feed.
-      for (const meta of [...postMetas]
-        .filter((m) => m.indexed)
-        .sort((a, b) => b.date.localeCompare(a.date))) {
-        const url = `${SITE_URL}/${meta.urlPath}/`;
-        // Use the post's `# Heading` as the title; fall back to the slug.
-        const md = readFileSync(join(postsDir, meta.path), 'utf-8');
-        const title =
-          md.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? meta.urlPath.split('/').pop()!;
-        feed.addItem({
-          title,
-          id: url,
-          link: url,
-          date: new Date(`${meta.date}T00:00:00Z`),
-        });
-      }
-
-      this.emitFile({ type: 'asset', fileName: 'rss.xml', source: feed.rss2() });
+    },
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'rss.xml', source: buildRssXml() });
     },
   };
 }
