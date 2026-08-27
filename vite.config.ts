@@ -7,12 +7,20 @@ import { join } from 'node:path';
 import { Feed } from 'feed';
 import { lookup as mimeTypeOf } from 'mime-types';
 import type { Plugin } from 'vite';
-import { getPostIndexData, postFiles, postsDir } from './src/lib/markdown';
+import { getPostIndexData, getPostFiles } from './src/lib/markdown';
 
 // All content processing (git dates, frontmatter, markdown rendering) lives
 // in src/lib/markdown.ts, shared with the static server functions in
 // src/lib/blog.ts. This config only consumes the results: prerender page
 // list, RSS feed, and asset copying.
+
+// The posts/ root is resolved from this file's own directory — always the
+// project root, in dev and build alike — and passed into markdown.ts. (The
+// module itself can't hardcode it: its location differs between source and
+// the built server bundle.) blog.ts resolves the same root from
+// process.cwd() on the prerender server.
+const postsDir = join(import.meta.dirname, 'posts');
+const postFiles = getPostFiles(postsDir);
 
 
 // Canonical site origin. Used to build absolute URLs in the RSS feed
@@ -80,7 +88,7 @@ async function buildRssXml(): Promise<string> {
   // Newest first, by the effective date (frontmatter overrides git date).
   // Only indexed posts appear in the feed — exactly what getPostIndexData()
   // returns (title already resolved: frontmatter > `# Heading` > slug).
-  const items = (await getPostIndexData()).map((meta) => ({
+  const items = (await getPostIndexData(postsDir)).map((meta) => ({
     url: `${SITE_URL}/${meta.urlPath}/`,
     title: meta.title,
     date: new Date(meta.date),
