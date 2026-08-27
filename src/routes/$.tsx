@@ -29,7 +29,7 @@ export const Route = createFileRoute('/$')({
   // The post data (with rendered HTML) is fetched lazily from a per-post
   // JSON file, so client navigation only loads the post being viewed.
   loader: async ({ params }) => {
-    const post = await getPost(params._splat ?? '');
+    const post = await getPost({ data: params._splat ?? '' });
     if (!post) throw new Error('Post not found');
     return post;
   },

@@ -313,23 +313,17 @@ function rssPlugin(): Plugin {
   };
 }
 
-// Exposes post data to app code. Split into two parts to keep the JS bundle
-// small:
-//   - virtual:post-meta       -> lightweight index (no html) for the blog
-//                                list/RSS-style consumers
-//   - /posts-data/<urlPath>.json -> per-post JSON files with the full html,
-//                                emitted as static assets at build time and
-//                                served by middleware in dev. Fetched lazily
-//                                by route loaders on client navigation.
-// In dev mode it also watches posts/ for markdown changes and invalidates
-// the virtual module, so editing a post live-reloads without restarting.
+// Exposes post data to app code via virtual:post-meta (lightweight index,
+// no html) for RSS-style consumers. In dev mode it also watches posts/ for
+// markdown changes and invalidates the virtual module, so editing a post
+// live-reloads without restarting.
 function postMetaPlugin(): Plugin {
   const resolvedServerId = '\0' + virtualPostDataServer;
-  // Server-only module with FULL data (including html). Used by getPost() and
-  // getPosts() on SSR/prerender so they always reflect the current in-memory
-  // postMetas — reading dist/client/posts-data/*.json from disk would serve
-  // stale content in dev (and break live reload). The client never imports
-  // this module; it fetches /posts-data/*.json instead.
+  // Server-only module with FULL data (including html). Used by the getPost()
+  // and getPosts() static server functions on SSR/prerender so they always
+  // reflect the current in-memory postMetas — reading cached JSON from disk
+  // would serve stale content in dev (and break live reload). The client
+  // never imports this module; it fetches the prerendered cache files.
   const generateServerModule = () =>
     `export const fullPostMetas = ${JSON.stringify(postMetas)};`;
   return {
@@ -363,52 +357,6 @@ function postMetaPlugin(): Plugin {
   };
 }
 
-// Emits each post's full data as /posts-data/<urlPath>.json plus the
-// lightweight index as /posts-data/index.json (client build only). Dev mode
-// serves the same paths from memory via middleware.
-function postDataPlugin(): Plugin {
-  const jsonFor = (meta: PostMeta) => JSON.stringify(meta);
-  const indexJson = () =>
-    JSON.stringify(postMetas.map(({ html, ...rest }) => rest));
-  return {
-    name: 'post-data-assets',
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        const url = (req.url ?? '').split('?')[0];
-        if (url === '/posts-data/index.json') {
-          res.setHeader('Content-Type', 'application/json');
-          res.setHeader('Cache-Control', 'no-cache');
-          res.end(indexJson());
-          return;
-        }
-        const match = url.match(/^\/posts-data\/(.+)\.json$/);
-        if (!match) return next();
-        const meta = postMetas.find((m) => m.urlPath === match[1]);
-        if (!meta) return next();
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.end(jsonFor(meta));
-      });
-    },
-    generateBundle() {
-      // Only the client build produces deployable static assets.
-      if (this.environment.name !== 'client') return;
-      this.emitFile({
-        type: 'asset',
-        fileName: 'posts-data/index.json',
-        source: indexJson(),
-      });
-      for (const meta of postMetas) {
-        this.emitFile({
-          type: 'asset',
-          fileName: `posts-data/${meta.urlPath}.json`,
-          source: jsonFor(meta),
-        });
-      }
-    },
-  };
-}
-
 export default defineConfig({
   // TanStack Start owns the entries, dev serving, and the build. It scans
   // src/routes and generates src/routeTree.gen.ts, and prerenders the app to
@@ -416,7 +364,6 @@ export default defineConfig({
   plugins: [
     // Must be registered before solid().
     postMetaPlugin(),
-    postDataPlugin(),
     rssPlugin(),
     postsAssetsPlugin(),
     tanstackStart({

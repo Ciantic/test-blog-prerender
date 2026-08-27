@@ -8,6 +8,13 @@ import {
 import { HydrationScript } from '@solidjs/web';
 import type { ParentProps } from 'solid-js';
 import appCss from '../App.css?url';
+import { installInsecureContextPolyfills } from '../lib/insecure-context-polyfill';
+
+// crypto.subtle is only available in secure contexts (HTTPS/localhost).
+// The static server function middleware needs it to hash cache keys, so
+// polyfill it before any navigation can trigger a server function call.
+// Module side effect — runs once when the client bundle loads.
+installInsecureContextPolyfills();
 
 // The root route: the site-wide layout every route renders inside, plus the
 // not-found boundary. <HeadContent /> renders whatever the matched routes

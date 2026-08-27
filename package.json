@@ -14,11 +14,13 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@noble/hashes": "^2.3.0",
     "@solidjs/testing-library": "1.0.0-beta.2",
     "@solidjs/vite-plugin": "3.0.0-next.32",
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/router-plugin": "1.168.35",
+    "@tanstack/start-static-server-functions": "2.0.0-alpha.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@types/mime-types": "^3.0.1",
     "@types/node": "^26.3.0",
