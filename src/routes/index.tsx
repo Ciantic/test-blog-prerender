@@ -45,7 +45,7 @@ function Home() {
                 >
                   <time
                     datetime={post.date}
-                    class="w-24 shrink-0 tabular-nums text-sm text-base-content/50"
+                    class="w-14 sm:w-24 shrink-0 tabular-nums text-sm text-base-content/50"
                   >
                     {formatDateFinnish(post.date)}
                   </time>
