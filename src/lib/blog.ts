@@ -1,7 +1,7 @@
 // Blog data access. All heavy lifting (frontmatter parsing, markdown
-// rendering, git dates) happens at build time in vite.config.ts. Data is
-// exposed through *static server functions*: during prerendering the
-// handlers run on the server (reading virtual:post-data-server) and their
+// rendering, git dates) happens at build time in src/lib/markdown.ts. Data
+// is exposed through *static server functions*: during prerendering the
+// handlers run on the server (calling getPostMetas() directly) and their
 // results are cached as static JSON under /__tsr/staticServerFnCache/,
 // which the client fetches on subsequent navigations — no runtime server
 // needed.
@@ -12,18 +12,17 @@ import { createServerFn } from '@tanstack/solid-start';
 import { staticFunctionMiddleware } from '@tanstack/start-static-server-functions';
 import type { PostMeta, PostMetaIndex } from '../post-meta';
 
-let serverMetasPromise: Promise<PostMeta[]> | undefined;
+let serverIndexPromise: Promise<PostMetaIndex[]> | undefined;
 
 /**
- * Load the full post data on the server (memoized). Dynamic import keeps the
- * module out of the client bundle entirely; on SSR/prerender it always
- * reflects the current in-memory postMetas (fresh in dev live reload too).
+ * Load the post index on the server (memoized). The import is dynamic so
+ * the markdown module (and all post HTML) stays out of the client bundle
+ * entirely; on SSR/prerender it always reflects the current in-memory
+ * postMetas (fresh in dev live reload too).
  */
-function ensureServerMetas(): Promise<PostMeta[]> {
-  serverMetasPromise ??= import('virtual:post-data-server').then(
-    ({ fullPostMetas }) => fullPostMetas,
-  );
-  return serverMetasPromise;
+function ensureServerIndex(): Promise<PostMetaIndex[]> {
+  serverIndexPromise ??= import('./markdown').then((m) => m.getPostIndexData());
+  return serverIndexPromise;
 }
 
 /**
@@ -41,9 +40,7 @@ export const getPosts = createServerFn({ method: 'GET' })
   // align.
   .middleware([staticFunctionMiddleware as any])
   .handler(async () => {
-    return (await ensureServerMetas())
-      .filter((meta) => meta.indexed)
-      .sort((a, b) => b.date.localeCompare(a.date));
+    return ensureServerIndex();
   });
 
 /**
@@ -61,7 +58,8 @@ export const getPost = createServerFn({ method: 'GET' })
   // align.
   .middleware([staticFunctionMiddleware as any])
   .handler(async ({ data: urlPath }) => {
-    return (await ensureServerMetas()).find((m) => m.urlPath === urlPath);
+    const { getPostData } = await import('./markdown');
+    return getPostData(urlPath);
   });
 
 /** Formats a post date in Finnish style (j.n.Y), e.g. 30.1.2026. Any
