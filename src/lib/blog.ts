@@ -10,24 +10,13 @@
 //   posts/img/test-image.png  -> /2026/img/test-image.png
 import { createServerFn } from '@tanstack/solid-start';
 import { staticFunctionMiddleware } from '@tanstack/start-static-server-functions';
-import type { PostMeta, PostMetaIndex } from '../post-meta';
-
-let serverIndexPromise: Promise<PostMetaIndex[]> | undefined;
-
-/**
- * Load the post index on the server (memoized). The import is dynamic so
- * the markdown module (and all post HTML) stays out of the client bundle
- * entirely; on SSR/prerender it always reflects the current in-memory
- * postMetas (fresh in dev live reload too).
- */
-function ensureServerIndex(): Promise<PostMetaIndex[]> {
-  serverIndexPromise ??= import('./markdown').then((m) => m.getPostIndexData());
-  return serverIndexPromise;
-}
+import type { PostMeta } from '../post-meta';
 
 /**
  * Listed posts (those inside a numeric directory) with their effective
- * publish date resolved, newest first.
+ * publish date resolved, newest first. Not memoized: like getPost below,
+ * it calls into markdown.ts on every invocation so dev live reload stays
+ * fresh; the static server function cache makes this cheap in production.
  *
  * Static server function: runs on the server during prerendering, cached
  * as static JSON for client-side navigations. The list is lightweight
@@ -40,7 +29,10 @@ export const getPosts = createServerFn({ method: 'GET' })
   // align.
   .middleware([staticFunctionMiddleware as any])
   .handler(async () => {
-    return ensureServerIndex();
+    // Dynamic import so the markdown module (and all post HTML) stays out
+    // of the client bundle entirely.
+    const { getPostIndexData } = await import('./markdown');
+    return getPostIndexData();
   });
 
 /**
