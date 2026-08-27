@@ -132,101 +132,103 @@ function extractExcerptFromHtml(html: string): string {
 }
 
 /**
- * Scan posts/ and produce full metadata for every committed post: git
- * creation date, frontmatter, rendered HTML, effective title/excerpt/date.
- * Called on demand by the static server functions in src/lib/blog.ts during
- * SSR/prerender, and by vite.config.ts (RSS feed).
- *
- * NOTE: deliberately NOT memoized. Every call re-scans posts/ and re-runs
- * git, so dev live reload picks up edits immediately without any cache
- * invalidation. At build time this is called a handful of times, so the
- * cost is negligible. If the post count grows large and per-request
- * rescans become noticeable in dev, add a short-TTL cache here (e.g.
- * memoize the result for a second, or invalidate via a chokidar watcher) —
- * but keep build-time calls always fresh.
+ * Produce full metadata for a single post file: git creation date,
+ * frontmatter, rendered HTML, effective title/excerpt/date. Returns null for
+ * posts with no commit yet (they don't exist as far as the blog is
+ * concerned). Shared by both the single-post lookup and the index scan, so
+ * both paths resolve posts identically.
+ */
+async function computePostMeta(file: string): Promise<PostMeta | null> {
+  try {
+    const { stdout } = await execFileAsync(
+      'git',
+      [
+        'log',
+        // Only the commit that added the file — its creation date, so
+        // later edits don't change the post's date metadata.
+        '--diff-filter=A',
+        '--format=%ad',
+        // ISO 8601 with time part — parseable by new Date() in blog.ts.
+        '--date=format:%Y-%m-%dT%H:%M:%S%z',
+        '--',
+        file,
+      ],
+      { cwd: postsDir, encoding: 'utf-8' },
+    );
+    const out = stdout.trim();
+    if (!out) return null; // No commit for this file yet — skip it.
+    const date = out.split('\n')[0];
+    // Parse frontmatter once here so app code never needs gray-matter
+    // (which doesn't work in the browser). Unquoted YAML dates become
+    // Date objects — normalize them to ISO strings.
+    const { data, content } = matter(readFileSync(join(postsDir, file), 'utf-8'));
+    const pick = (key: string): string | undefined => {
+      const value = data[key];
+      if (typeof value === 'string') return value;
+      if (value instanceof Date) return value.toISOString();
+      if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+      return undefined;
+    };
+    const urlPath = file.replace(/\.md$/, '');
+    // Render the body (frontmatter stripped) to HTML here, so app code
+    // never needs marked either.
+    const html = rewriteRefs(renderMarkdown(content, urlPath));
+    // Effective title/excerpt resolved here too: frontmatter wins, then
+    // the markdown heading / first paragraph, then the slug.
+    const title = pick('title') ?? content.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? extractTitle(urlPath);
+    // Effective publish date: frontmatter overrides git date. Normalized
+    // so app code never needs Date parsing: date-only posts stay
+    // YYYY-MM-DD (Finnish formatter + year grouping), datetimes become
+    // YYYY-MM-DDTHH:mm. Sorting works lexicographically on both forms.
+    const fmDate = data.date instanceof Date ? data.date : undefined;
+    const parsed = fmDate ?? new Date(pick('date') ?? date);
+    if (Number.isNaN(parsed.getTime())) {
+      throw new Error(`Post ${file} has an unparseable date`);
+    }
+    const iso = parsed.toISOString();
+    const effectiveDate = iso.endsWith('T00:00:00.000Z') ? iso.slice(0, 10) : iso.slice(0, 16);
+    return {
+      urlPath,
+      path: file,
+      date: effectiveDate,
+      indexed: /^\d+\//.test(file),
+      frontmatter: {
+        title: pick('title'),
+        date: pick('date'),
+        excerpt: pick('excerpt'),
+      },
+      title,
+      excerpt: pick('excerpt') ?? extractExcerptFromHtml(html),
+      html,
+    };
+  } catch {
+    return null; // Not a git repo or git unavailable — skip.
+  }
+}
+
+/**
+ * Scan posts/ and produce full metadata for every committed post, running
+ * all per-post computations concurrently — each is an independent process
+ * spawn. Called on demand by the static server functions in src/lib/blog.ts
+ * during SSR/prerender, and by vite.config.ts (RSS feed).
  */
 async function getPostMetas(): Promise<PostMeta[]> {
   const files = postFiles.filter((f) => f.endsWith('.md'));
-
-  // Run all git queries concurrently — each is an independent process spawn.
-  const results = await Promise.all(
-    files.map(async (file): Promise<PostMeta | null> => {
-      try {
-        const { stdout } = await execFileAsync(
-          'git',
-          [
-            'log',
-            // Only the commit that added the file — its creation date, so
-            // later edits don't change the post's date metadata.
-            '--diff-filter=A',
-            '--format=%ad',
-            // ISO 8601 with time part — parseable by new Date() in blog.ts.
-            '--date=format:%Y-%m-%dT%H:%M:%S%z',
-            '--',
-            file,
-          ],
-          { cwd: postsDir, encoding: 'utf-8' },
-        );
-        const out = stdout.trim();
-        if (!out) return null; // No commit for this file yet — skip it.
-        const date = out.split('\n')[0];
-        // Parse frontmatter once here so app code never needs gray-matter
-        // (which doesn't work in the browser). Unquoted YAML dates become
-        // Date objects — normalize them to ISO strings.
-        const { data, content } = matter(readFileSync(join(postsDir, file), 'utf-8'));
-        const pick = (key: string): string | undefined => {
-          const value = data[key];
-          if (typeof value === 'string') return value;
-          if (value instanceof Date) return value.toISOString();
-          if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-          return undefined;
-        };
-        const urlPath = file.replace(/\.md$/, '');
-        // Render the body (frontmatter stripped) to HTML here, so app code
-        // never needs marked either.
-        const html = rewriteRefs(renderMarkdown(content, urlPath));
-        // Effective title/excerpt resolved here too: frontmatter wins, then
-        // the markdown heading / first paragraph, then the slug.
-        const title = pick('title') ?? content.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? extractTitle(urlPath);
-        // Effective publish date: frontmatter overrides git date. Normalized
-        // so app code never needs Date parsing: date-only posts stay
-        // YYYY-MM-DD (Finnish formatter + year grouping), datetimes become
-        // YYYY-MM-DDTHH:mm. Sorting works lexicographically on both forms.
-        const fmDate = data.date instanceof Date ? data.date : undefined;
-        const parsed = fmDate ?? new Date(pick('date') ?? date);
-        if (Number.isNaN(parsed.getTime())) {
-          throw new Error(`Post ${file} has an unparseable date`);
-        }
-        const iso = parsed.toISOString();
-        const effectiveDate = iso.endsWith('T00:00:00.000Z') ? iso.slice(0, 10) : iso.slice(0, 16);
-        return {
-          urlPath,
-          path: file,
-          date: effectiveDate,
-          indexed: /^\d+\//.test(file),
-          frontmatter: {
-            title: pick('title'),
-            date: pick('date'),
-            excerpt: pick('excerpt'),
-          },
-          title,
-          excerpt: pick('excerpt') ?? extractExcerptFromHtml(html),
-          html,
-        };
-      } catch {
-        return null; // Not a git repo or git unavailable — skip.
-      }
-    }),
-  );
+  const results = await Promise.all(files.map(computePostMeta));
   return results.filter((m) => m !== null);
 }
 
 /**
  * Full data for a single post (including rendered HTML), by URL path.
  * Used by the getPost() static server function in src/lib/blog.ts.
+ *
+ * Computes only the requested post (one git spawn + one render) instead of
+ * scanning every post — no O(N) work per lookup, no cache needed.
  */
 export async function getPostData(urlPath: string): Promise<PostMeta | undefined> {
-  return (await getPostMetas()).find((m) => m.urlPath === urlPath);
+  const file = `${urlPath}.md`;
+  if (!postFiles.includes(file)) return undefined;
+  return (await computePostMeta(file)) ?? undefined;
 }
 
 /**
