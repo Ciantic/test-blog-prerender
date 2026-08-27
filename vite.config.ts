@@ -302,16 +302,22 @@ function rssPlugin(): Plugin {
   };
 }
 
-// Exposes `postMetas` to app code in every build (dev, SSR, client).
+// Exposes post data to app code. Split into two parts to keep the JS bundle
+// small:
+//   - virtual:post-meta       -> lightweight index (no html) for the blog
+//                                list/RSS-style consumers
+//   - /posts-data/<urlPath>.json -> per-post JSON files with the full html,
+//                                emitted as static assets at build time and
+//                                served by middleware in dev. Fetched lazily
+//                                by route loaders on client navigation.
 // In dev mode it also watches posts/ for markdown changes and invalidates
 // the virtual module, so editing a post live-reloads without restarting.
 function postMetaPlugin(): Plugin {
   const resolvedId = '\0' + virtualPostMeta;
   const generateVirtualModule = () =>
-    [
-      `export const postMetas = ${JSON.stringify(postMetas)};`,
-      `export const imageDims = ${JSON.stringify(imageDims)};`,
-    ].join('\n');
+    `export const postMetas = ${JSON.stringify(
+      postMetas.map(({ html, ...rest }) => rest),
+    )};`;
   return {
     name: 'post-meta-virtual-module',
     resolveId(id) {
@@ -344,6 +350,38 @@ function postMetaPlugin(): Plugin {
   };
 }
 
+// Emits each post's full data as /posts-data/<urlPath>.json (client build
+// only). Dev mode serves the same paths from memory via middleware.
+function postDataPlugin(): Plugin {
+  const jsonFor = (meta: PostMeta) => JSON.stringify(meta);
+  return {
+    name: 'post-data-assets',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = (req.url ?? '').split('?')[0];
+        const match = url.match(/^\/posts-data\/(.+)\.json$/);
+        if (!match) return next();
+        const meta = postMetas.find((m) => m.urlPath === match[1]);
+        if (!meta) return next();
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.end(jsonFor(meta));
+      });
+    },
+    generateBundle() {
+      // Only the client build produces deployable static assets.
+      if (this.environment.name !== 'client') return;
+      for (const meta of postMetas) {
+        this.emitFile({
+          type: 'asset',
+          fileName: `posts-data/${meta.urlPath}.json`,
+          source: jsonFor(meta),
+        });
+      }
+    },
+  };
+}
+
 export default defineConfig({
   // TanStack Start owns the entries, dev serving, and the build. It scans
   // src/routes and generates src/routeTree.gen.ts, and prerenders the app to
@@ -351,6 +389,7 @@ export default defineConfig({
   plugins: [
     // Must be registered before solid().
     postMetaPlugin(),
+    postDataPlugin(),
     rssPlugin(),
     postsAssetsPlugin(),
     tanstackStart({

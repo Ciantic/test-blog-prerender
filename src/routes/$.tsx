@@ -24,14 +24,15 @@ function PostPage() {
 
 export const Route = createFileRoute('/$')({
   // Splat route: the whole URL path (minus leading slash) is `params._splat`,
-  // e.g. /2026/hello-world/ -> '2026/hello-world'. This mirrors the posts/
+  // e.g. /2026/hello-world -> '2026/hello-world'. This mirrors the posts/
   // directory structure exactly. 404s if there's no post for that path.
-  beforeLoad: ({ params }) => {
-    if (!getPost(params._splat ?? '')) {
-      throw new Error('Post not found');
-    }
+  // The post data (with rendered HTML) is fetched lazily from a per-post
+  // JSON file, so client navigation only loads the post being viewed.
+  loader: async ({ params }) => {
+    const post = await getPost(params._splat ?? '');
+    if (!post) throw new Error('Post not found');
+    return post;
   },
-  loader: ({ params }) => getPost(params._splat ?? '')!,
   head: ({ params }) => ({
     meta: [{ title: `${params._splat?.split('/').pop()} - Solid App` }],
   }),
