@@ -6,6 +6,7 @@
 
 import { marked } from 'marked';
 import type { Renderer, Tokens } from 'marked';
+import matter from 'gray-matter';
 import { postMetas, imageDims } from 'virtual:post-meta';
 
 export interface BlogPost {
@@ -33,6 +34,26 @@ const modules = import.meta.glob('/posts/**/*.md', {
 /** '/posts/2026/foo.md' -> '2026/foo' */
 function urlPathFromPath(path: string): string {
   return path.replace(/^\/posts\//, '').replace(/\.md$/, '');
+}
+
+/**
+ * Frontmatter via gray-matter: a leading `---` block parsed as YAML.
+ * Supports the scalar fields this blog uses (title, date, excerpt); unknown
+ * keys are ignored. Posts without frontmatter parse as-is.
+ */
+function parseFrontmatter(markdown: string): {
+  data: Record<string, string>;
+  body: string;
+} {
+  const { data, content } = matter(markdown);
+  // Coerce to strings — YAML may parse dates as Date objects, etc.
+  const strData: Record<string, string> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (typeof value === 'string') strData[key] = value;
+    else if (value instanceof Date) strData[key] = value.toISOString().slice(0, 10);
+    else if (value != null) strData[key] = String(value);
+  }
+  return { data: strData, body: content };
 }
 
 /** First `# Heading` line, or a title-cased fallback derived from the slug. */
@@ -112,25 +133,28 @@ const posts = Object.entries(modules)
     const urlPath = urlPathFromPath(path);
     const meta = metaByUrlPath.get(urlPath);
     if (!meta) return undefined;
+    const { data, body } = parseFrontmatter(markdown);
     return {
       urlPath,
-      date: meta.date,
-      title: extractTitle(markdown, urlPath),
-      excerpt: extractExcerpt(markdown),
-      html: rewriteRefs(renderMarkdown(markdown, urlPath)),
+      // Frontmatter date overrides the git-derived publish date.
+      date: data.date ?? meta.date,
+      title: data.title ?? extractTitle(body, urlPath),
+      excerpt: data.excerpt ?? extractExcerpt(body),
+      html: rewriteRefs(renderMarkdown(body, urlPath)),
     };
   })
   .filter((post): post is BlogPost => post !== undefined);
 
 const byUrlPath = new Map(posts.map((post) => [post.urlPath, post]));
 
-/** Index entries for listed posts only (those inside a numeric directory). */
+/** Index entries for listed posts only (those inside a numeric directory), newest first. */
 export function getPosts(): BlogIndexEntry[] {
   return postMetas
     .filter((meta) => meta.indexed)
     .map((meta) => byUrlPath.get(meta.urlPath))
     .filter((post): post is BlogPost => post !== undefined)
-    .map(({ urlPath, date, title, excerpt }) => ({ urlPath, date, title, excerpt }));
+    .map(({ urlPath, date, title, excerpt }) => ({ urlPath, date, title, excerpt }))
+    .sort((a, b) => b.date.localeCompare(a.date));
 }
 
 export function getPost(urlPath: string): BlogPost | undefined {

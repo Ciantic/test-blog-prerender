@@ -1,6 +1,12 @@
+---
+title: Greetings, Internet!
+date: 2025-11-05
+excerpt: Kicking off the blog with a hello world, a test image, and why I started writing in the first place.
+---
+
 # Hello World
 
-This is my first post. Welcome to the blog!
+This is my first post. This also contains a frontmatter. Welcome to the blog!
 
 ## Why I started blogging
 

@@ -16,6 +16,9 @@ To add your own posts, make a new repository, and symbolic link it into the `pos
 - Directory structure for posts is mirrored from the `posts` directory.
 - Each post is a `.md` and is rendered into a static page.
 - Post publish date is read from git repository commit history.
+- Frontmatter (`title`, `date`, `excerpt`) overrides the derived title,
+  first-paragraph excerpt and git-derived publish date.
+- Blog index is grouped by year and sorted newest first.
 - Everything is prerendered
 - Pages load without JavaScript
 - RSS feed (basic, no paging)
@@ -24,5 +27,4 @@ To add your own posts, make a new repository, and symbolic link it into the `pos
 
 ## Not implemented
 
-- Reading frontmatter, e.g. different publish date than in git repository
-- Excerpt from frontmatter
+- Paging for the blog index and RSS feed

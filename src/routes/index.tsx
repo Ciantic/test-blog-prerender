@@ -5,13 +5,13 @@ function Home() {
   // Typed by the loader's return type.
   const posts = Route.useLoaderData();
 
-  // Group posts by year (from their URL path's leading segment or the post
-  // date) for the year-marked list layout.
+  // Group posts by year (from their publish date — frontmatter may override
+  // both the git date and what the URL path suggests) for the year-marked
+  // list layout.
   const byYear = () => {
     const groups = new Map<number, BlogIndexEntry[]>();
     for (const post of posts()) {
-      const year =
-        Number(post.urlPath.match(/^(\d{4})\//)?.[1]) || Number(post.date.slice(0, 4));
+      const year = Number(post.date.slice(0, 4));
       const list = groups.get(year);
       if (list) list.push(post);
       else groups.set(year, [post]);
