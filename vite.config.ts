@@ -193,7 +193,7 @@ async function getPostMetas(): Promise<PostMeta[]> {
 // Mutable so dev-mode file watching can refresh it (see postMetaPlugin).
 let postMetas = await getPostMetas();
 
-const virtualPostMeta = 'virtual:post-meta';
+const virtualPostDataServer = 'virtual:post-data-server';
 
 // Canonical site origin. Used to build absolute URLs in the RSS feed
 // (RSS requires absolute link elements). Adjust when deploying.
@@ -313,19 +313,21 @@ function rssPlugin(): Plugin {
 // In dev mode it also watches posts/ for markdown changes and invalidates
 // the virtual module, so editing a post live-reloads without restarting.
 function postMetaPlugin(): Plugin {
-  const resolvedId = '\0' + virtualPostMeta;
-  const generateVirtualModule = () =>
-    `export const postMetas = ${JSON.stringify(
-      postMetas.map(({ html, ...rest }) => rest),
-    )};`;
+  const resolvedServerId = '\0' + virtualPostDataServer;
+  // Server-only module with FULL data (including html). Used by getPost() and
+  // getPosts() on SSR/prerender so they always reflect the current in-memory
+  // postMetas — reading dist/client/posts-data/*.json from disk would serve
+  // stale content in dev (and break live reload). The client never imports
+  // this module; it fetches /posts-data/*.json instead.
+  const generateServerModule = () =>
+    `export const fullPostMetas = ${JSON.stringify(postMetas)};`;
   return {
     name: 'post-meta-virtual-module',
     resolveId(id) {
-      if (id === virtualPostMeta) return resolvedId;
+      if (id === virtualPostDataServer) return resolvedServerId;
     },
     load(id) {
-      if (id !== resolvedId) return;
-      return generateVirtualModule();
+      if (id === resolvedServerId) return generateServerModule();
     },
     configureServer(server) {
       server.watcher.add(postsDir);
@@ -337,7 +339,7 @@ function postMetaPlugin(): Plugin {
         refreshing = true;
         try {
           postMetas = await getPostMetas();
-          const mod = server.moduleGraph.getModuleById(resolvedId);
+          const mod = server.moduleGraph.getModuleById(resolvedServerId);
           if (mod) await server.moduleGraph.invalidateModule(mod);
         } finally {
           refreshing = false;
@@ -350,15 +352,24 @@ function postMetaPlugin(): Plugin {
   };
 }
 
-// Emits each post's full data as /posts-data/<urlPath>.json (client build
-// only). Dev mode serves the same paths from memory via middleware.
+// Emits each post's full data as /posts-data/<urlPath>.json plus the
+// lightweight index as /posts-data/index.json (client build only). Dev mode
+// serves the same paths from memory via middleware.
 function postDataPlugin(): Plugin {
   const jsonFor = (meta: PostMeta) => JSON.stringify(meta);
+  const indexJson = () =>
+    JSON.stringify(postMetas.map(({ html, ...rest }) => rest));
   return {
     name: 'post-data-assets',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = (req.url ?? '').split('?')[0];
+        if (url === '/posts-data/index.json') {
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Cache-Control', 'no-cache');
+          res.end(indexJson());
+          return;
+        }
         const match = url.match(/^\/posts-data\/(.+)\.json$/);
         if (!match) return next();
         const meta = postMetas.find((m) => m.urlPath === match[1]);
@@ -371,6 +382,11 @@ function postDataPlugin(): Plugin {
     generateBundle() {
       // Only the client build produces deployable static assets.
       if (this.environment.name !== 'client') return;
+      this.emitFile({
+        type: 'asset',
+        fileName: 'posts-data/index.json',
+        source: indexJson(),
+      });
       for (const meta of postMetas) {
         this.emitFile({
           type: 'asset',

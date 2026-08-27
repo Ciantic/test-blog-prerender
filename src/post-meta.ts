@@ -1,10 +1,10 @@
 /**
  * Post metadata produced at build time by vite.config.ts and shipped to app
- * code through the virtual:post-meta module. This file is the single source
- * of truth for the shape — both vite.config.ts (producer) and src/lib/blog.ts
+ * code through the virtual:post-meta modules. This file is the single source
+ * of truth for the shapes — both vite.config.ts (producer) and src/lib/blog.ts
  * (consumer) import it from here.
  */
-export interface PostMeta {
+export interface PostMetaIndex {
   /** URL path inside the site (no leading/trailing slash), e.g. '2026/my-post'. */
   urlPath: string;
   /** Path of the markdown file inside posts/, e.g. '2026/my-post.md'. */
@@ -27,6 +27,10 @@ export interface PostMeta {
   title: string;
   /** Effective excerpt: frontmatter > first paragraph of rendered HTML. */
   excerpt: string;
+}
+
+/** Full post data: everything in PostMetaIndex plus the rendered HTML. */
+export interface PostMeta extends PostMetaIndex {
   /** Markdown body rendered to HTML at build time (frontmatter stripped). */
   html: string;
 }

@@ -73,7 +73,7 @@ function Home() {
 }
 
 export const Route = createFileRoute('/')({
-  loader: () => getPosts(),
+  loader: async () => getPosts(),
   head: () => ({ meta: [{ title: 'Blog - Solid App' }] }),
   component: Home,
 });

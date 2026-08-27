@@ -1,15 +1,14 @@
 // Blog data access. All heavy lifting (frontmatter parsing, markdown
 // rendering, git dates) happens at build time in vite.config.ts. Data is
 // split to keep the JS bundle small:
-//   - virtual:post-meta          -> lightweight index (no html)
-//   - /posts-data/<urlPath>.json -> per-post JSON with full html, fetched
-//                                   lazily by getPost()
+//   - SSR/prerender: virtual:post-data-server (dynamic import so it never
+//     lands in the client bundle), backed by in-memory build data
+//   - Client: static JSON under /posts-data/ fetched lazily
+//     (index.json for the list, <urlPath>.json per post)
 // URLs mirror posts/ exactly:
 //   posts/2026/my-post.md     -> /2026/my-post/
 //   posts/img/test-image.png  -> /2026/img/test-image.png
-
-import { postMetas } from 'virtual:post-meta';
-import type { PostMeta } from '../post-meta';
+import type { PostMeta, PostMetaIndex } from '../post-meta';
 
 export interface BlogPost {
   /** URL path (no leading/trailing slash), e.g. '2026/my-post'. */
@@ -47,62 +46,91 @@ function formatPostDate(date: Date): string {
   return iso.endsWith('T00:00:00.000Z') ? iso.slice(0, 10) : iso.slice(0, 16);
 }
 
-const metaByUrlPath = new Map(postMetas.map((meta) => [meta.urlPath, meta]));
-
-// Reshape the build-time index entries. The only runtime logic left is
-// resolving the effective publish date (frontmatter overrides git date).
-const posts = postMetas.map((meta) => {
+/** Resolve the effective publish date: frontmatter overrides git date. */
+function effectiveDate(meta: PostMetaIndex): string {
   const publishDate = parseDateValue(meta.frontmatter.date ?? meta.date);
   if (!publishDate) throw new Error(`Post ${meta.urlPath} has an unparseable date`);
+  return formatPostDate(publishDate);
+}
+
+function toIndexEntry(meta: PostMetaIndex): BlogIndexEntry {
   return {
     urlPath: meta.urlPath,
-    date: formatPostDate(publishDate),
+    date: effectiveDate(meta),
     title: meta.title,
     excerpt: meta.excerpt,
   };
-});
+}
 
-const postByUrlPath = new Map(posts.map((post) => [post.urlPath, post]));
+/**
+ * Load the full post data on the server. Dynamic import keeps the module out
+ * of the client bundle entirely; on SSR/prerender it always reflects the
+ * current in-memory postMetas (fresh in dev live reload too).
+ */
+async function loadServerMetas(): Promise<PostMeta[]> {
+  if (!import.meta.env.SSR) return [];
+  const { fullPostMetas } = await import('virtual:post-data-server');
+  return fullPostMetas;
+}
 
-/** Index entries for listed posts only (those inside a numeric directory), newest first. */
-export function getPosts(): BlogIndexEntry[] {
-  return posts
-    .filter((post) => metaByUrlPath.get(post.urlPath)?.indexed)
+const postByUrlPath = new Map(
+  // Built lazily on first use; safe because loaders run after this module's
+  // top-level await resolves.
+  [] as [string, BlogIndexEntry][],
+);
+let serverMetasPromise: Promise<PostMeta[]> | undefined;
+
+function ensureServerMetas(): Promise<PostMeta[]> {
+  serverMetasPromise ??= loadServerMetas();
+  return serverMetasPromise;
+}
+
+/**
+ * Index entries for listed posts only (those inside a numeric directory),
+ * newest first.
+ *
+ * SSR/prerender reads the in-memory virtual module; on the client it fetches
+ * /posts-data/index.json so the post list isn't bundled into JS.
+ */
+export async function getPosts(): Promise<BlogIndexEntry[]> {
+  let metas: PostMetaIndex[];
+  if (import.meta.env.SSR) {
+    metas = await ensureServerMetas();
+  } else {
+    const res = await fetch('/posts-data/index.json');
+    if (!res.ok) return [];
+    metas = (await res.json()) as PostMetaIndex[];
+  }
+  return metas
+    .filter((meta) => meta.indexed)
+    .map(toIndexEntry)
     .sort((a, b) => b.date.localeCompare(a.date));
 }
 
 /**
- * Fetch a single post's full data (including rendered HTML). The data lives
- * in per-post static JSON files, so client-side navigation only loads the
- * post being viewed instead of every post bundled into JS.
+ * Fetch a single post's full data (including rendered HTML).
  *
- * On the server (SSR/prerender) there is no HTTP server to fetch from, so
- * the JSON is read straight from dist/client/posts-data/ instead. In dev,
- * vite-plugin-solid's SSR environment also can't reach the middleware via a
- * relative fetch, so the same file read applies (posts-data/ may not exist
- * yet — fall back to an empty result).
+ * Data sources by environment:
+ *   - SSR/prerender: virtual:post-data-server, which always reflects the
+ *     current in-memory postMetas (fresh in dev live reload too).
+ *   - Client: per-post static JSON at /posts-data/<urlPath>.json, fetched
+ *     lazily so client navigation only loads the post being viewed.
  */
 export async function getPost(urlPath: string): Promise<BlogPost | undefined> {
-  const summary = postByUrlPath.get(urlPath);
-  if (!summary) return undefined;
   if (import.meta.env.SSR) {
-    try {
-      const { readFileSync } = await import('node:fs');
-      const { join } = await import('node:path');
-      // import.meta.dirname points at src/ in dev and dist/server in build;
-      // resolve the client output relative to the project root instead.
-      const root = process.cwd();
-      const file = join(root, 'dist', 'client', 'posts-data', `${urlPath}.json`);
-      const meta = JSON.parse(readFileSync(file, 'utf-8')) as PostMeta;
-      return { ...summary, html: meta.html };
-    } catch {
-      return undefined;
-    }
+    const meta = (await ensureServerMetas()).find((m) => m.urlPath === urlPath);
+    return meta ? { ...toIndexEntry(meta), html: meta.html } : undefined;
   }
   const res = await fetch(`/posts-data/${urlPath}.json`);
   if (!res.ok) return undefined;
-  const meta = (await res.json()) as PostMeta;
-  return { ...summary, html: meta.html };
+  const fetched = (await res.json()) as PostMeta;
+  return {
+    urlPath: fetched.urlPath,
+    date: effectiveDate(fetched),
+    title: fetched.title,
+    excerpt: fetched.excerpt,
+    html: fetched.html,
+  };
 }
 
 /** Formats a post date in Finnish style (j.n.Y), e.g. 30.1.2026. Any
