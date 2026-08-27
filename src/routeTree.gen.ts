@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
+import { Route as RssDotxmlRouteImport } from './routes/rss[.]xml'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const SplatRoute = SplatRouteImport.update({
   path: '/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RssDotxmlRoute = RssDotxmlRouteImport.update({
+  id: '/rss.xml',
+  path: '/rss.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutIndexRoute = AboutIndexRouteImport.update({
   id: '/about/',
   path: '/about/',
@@ -32,30 +38,34 @@ const AboutIndexRoute = AboutIndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/rss.xml': typeof RssDotxmlRoute
   '/about/': typeof AboutIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/rss.xml': typeof RssDotxmlRoute
   '/about': typeof AboutIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/rss.xml': typeof RssDotxmlRoute
   '/about/': typeof AboutIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$' | '/about/'
+  fullPaths: '/' | '/$' | '/rss.xml' | '/about/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$' | '/about'
-  id: '__root__' | '/' | '/$' | '/about/'
+  to: '/' | '/$' | '/rss.xml' | '/about'
+  id: '__root__' | '/' | '/$' | '/rss.xml' | '/about/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
+  RssDotxmlRoute: typeof RssDotxmlRoute
   AboutIndexRoute: typeof AboutIndexRoute
 }
 
@@ -75,6 +85,13 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof SplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rss.xml': {
+      id: '/rss.xml'
+      path: '/rss.xml'
+      fullPath: '/rss.xml'
+      preLoaderRoute: typeof RssDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about/': {
       id: '/about/'
       path: '/about'
@@ -88,6 +105,7 @@ declare module '@tanstack/solid-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
+  RssDotxmlRoute: RssDotxmlRoute,
   AboutIndexRoute: AboutIndexRoute,
 }
 export const routeTree = rootRouteImport

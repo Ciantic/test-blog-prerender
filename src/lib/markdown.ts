@@ -23,8 +23,6 @@ import type { PostMeta, PostMetaIndex } from '../post-meta';
 
 
 export interface PostsContext {
-  /** Absolute path to the posts/ directory. */
-  dir: string;
   /** All files under posts/ recursively, as slash-separated relative paths. */
   postFiles: string[];
   /** Relative image path (inside posts/) -> pixel dims, for CLS-free <img> tags. */
@@ -60,7 +58,7 @@ async function getImageDims(postsDir: string, postFiles: string[]): Promise<Reco
 async function buildContext(postsDir: string): Promise<PostsContext> {
   const postFiles = getPostFiles(postsDir);
   const imageDims = await getImageDims(postsDir, postFiles);
-  return { dir: postsDir, postFiles, imageDims };
+  return { dir: import.meta.env.VITE_POSTS_DIR, postFiles, imageDims };
 }
 
 const contexts = new Map<string, Promise<PostsContext>>();
@@ -136,7 +134,7 @@ async function computePostMeta(file: string, ctx: PostsContext): Promise<PostMet
         '--',
         file,
       ],
-      { cwd: ctx.dir, encoding: 'utf-8' },
+      { cwd: import.meta.env.VITE_POSTS_DIR, encoding: 'utf-8' },
     );
     const out = stdout.trim();
     if (!out) return null; // No commit for this file yet — skip it.
@@ -144,7 +142,7 @@ async function computePostMeta(file: string, ctx: PostsContext): Promise<PostMet
     // Parse frontmatter once here so app code never needs gray-matter
     // (which doesn't work in the browser). Unquoted YAML dates become
     // Date objects — normalize them to ISO strings.
-    const { data, content } = matter(readFileSync(join(ctx.dir, file), 'utf-8'));
+    const { data, content } = matter(readFileSync(join(import.meta.env.VITE_POSTS_DIR, file), 'utf-8'));
     const pick = (key: string): string | undefined => {
       const value = data[key];
       if (typeof value === 'string') return value;
@@ -196,16 +194,16 @@ async function getPostMetas(ctx: PostsContext): Promise<PostMeta[]> {
 }
 
 
-export async function getPostData(postsDir: string, urlPath: string): Promise<PostMeta | undefined> {
-  const ctx = await getContext(postsDir);
+export async function getPostData(urlPath: string): Promise<PostMeta | undefined> {
+  const ctx = await getContext(import.meta.env.VITE_POSTS_DIR);
   const file = `${urlPath}.md`;
   if (!ctx.postFiles.includes(file)) return undefined;
   return (await computePostMeta(file, ctx)) ?? undefined;
 }
 
 
-export async function getPostIndexData(postsDir: string): Promise<PostMetaIndex[]> {
-  const ctx = await getContext(postsDir);
+export async function getPostIndexData(): Promise<PostMetaIndex[]> {
+  const ctx = await getContext(import.meta.env.VITE_POSTS_DIR);
   return (await getPostMetas(ctx))
     .filter((meta) => meta.indexed)
     .sort((a, b) => b.date.localeCompare(a.date))
