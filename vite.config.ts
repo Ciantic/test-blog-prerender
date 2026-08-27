@@ -8,9 +8,13 @@ import { readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
 import { Feed } from 'feed';
+import matter from 'gray-matter';
+import { marked } from 'marked';
+import type { Renderer, Tokens } from 'marked';
 import { lookup as mimeTypeOf } from 'mime-types';
 import { imageSize } from 'image-size';
 import type { Plugin } from 'vite';
+import type { PostMeta } from './src/post-meta';
 
 // --- Git-derived post metadata -------------------------------------------
 //
@@ -21,21 +25,9 @@ import type { Plugin } from 'vite';
 //   posts/img/test-image.png  -> /img/test-image.png
 // Posts with no commit yet are skipped entirely (they don't exist as far as
 // the blog is concerned).
-
-export interface PostMeta {
-  /** URL path inside the site (no leading/trailing slash), e.g. '2026/my-post'. */
-  urlPath: string;
-  /** Path of the markdown file inside posts/, e.g. '2026/my-post.md'. */
-  path: string;
-  /** Commit date as YYYY-MM-DD, e.g. 2026-01-30. */
-  date: string;
-  /**
-   * Whether the post appears in the blog index and RSS feed. Only posts
-   * inside a numeric directory (e.g. \d+/my-post.md) are listed; other
-   * top-level files are still routable but unlisted.
-   */
-  indexed: boolean;
-}
+//
+// The PostMeta interface is declared once in src/vite-env.d.ts (as part of
+// the virtual:post-meta module declaration) and imported here.
 
 const postsDir = join(import.meta.dirname, 'posts');
 
@@ -46,51 +38,12 @@ const postFiles = readdirSync(postsDir, { recursive: true, encoding: 'utf-8', wi
 
 const execFileAsync = promisify(execFile);
 
-async function getPostMetas(): Promise<PostMeta[]> {
-  const files = postFiles.filter((f) => f.endsWith('.md'));
-
-  // Run all git queries concurrently — each is an independent process spawn.
-  const results = await Promise.all(
-    files.map(async (file): Promise<PostMeta | null> => {
-      try {
-        const { stdout } = await execFileAsync(
-          'git',
-          [
-            'log',
-            // Only the commit that added the file — its creation date, so
-            // later edits don't change the post's date metadata.
-            '--diff-filter=A',
-            '--format=%ad',
-            '--date=format:%Y-%m-%d',
-            '--',
-            file,
-          ],
-          { cwd: postsDir, encoding: 'utf-8' },
-        );
-        const out = stdout.trim();
-        if (!out) return null; // No commit for this file yet — skip it.
-        const date = out.split('\n')[0];
-        return {
-          urlPath: file.replace(/\.md$/, ''),
-          path: file,
-          date,
-          indexed: /^\d+\//.test(file),
-        };
-      } catch {
-        return null; // Not a git repo or git unavailable — skip.
-      }
-    }),
-  );
-  return results.filter((m) => m !== null);
-}
-
-const postMetas = await getPostMetas();
-
 // --- Image dimensions ------------------------------------------------------
 //
 // Measures every image in posts/ once at config time so markdown-rendered
 // <img> tags can include width/height (prevents layout shift / CLS).
 // Keyed by the path inside posts/, e.g. '2026/img/test-image.png'.
+// Computed before postMetas because the markdown renderer uses it.
 async function getImageDims(): Promise<Record<string, { width: number; height: number }>> {
   const imageFiles = postFiles.filter((rel) => /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(rel));
   const results = await Promise.all(
@@ -109,6 +62,135 @@ async function getImageDims(): Promise<Record<string, { width: number; height: n
 }
 
 const imageDims = await getImageDims();
+
+/**
+ * Rewrite relative refs in rendered HTML so they resolve against the page's
+ * directory URL. A post at posts/2026/x.md is served at /2026/x/, whose base
+ * is one segment deeper than the file's own directory — prefixing '../'
+ * cancels that out:
+ *   <a href="./other.md">   -> ../other/      -> /2026/other/
+ *   <img src="img/f.png">   -> ../img/f.png   -> /2026/img/f.png
+ * External URLs, absolute paths and anchors are left untouched.
+ */
+function rewriteRefs(html: string): string {
+  return html.replace(/\b(src|href)="([^"]*)"/g, (_all, attr: string, target: string) => {
+    if (/^(https?:)?\/\//i.test(target) || target.startsWith('/') || target.startsWith('#')) {
+      return _all;
+    }
+    const clean = target.replace(/^\.\//, '');
+    if (clean.endsWith('.md')) {
+      return `${attr}="../${clean.slice(0, -'.md'.length)}/"`;
+    }
+    return `${attr}="../${clean}"`;
+  });
+}
+
+/**
+ * Custom image renderer adding width/height from imageDims. Markdown image
+ * srcs are relative to the post's own directory, resolved against it before
+ * the lookup. marked.use() merges the renderer (a partial `renderer` option
+ * in parse() would replace the whole one), so the post's directory is passed
+ * via a module-level variable set before each parse.
+ */
+let currentPostDir = '';
+marked.use({
+  renderer: {
+    image(this: Renderer, token: Tokens.Image): string {
+      const clean = token.href.replace(/^\.\//, '');
+      const dims = imageDims[`${currentPostDir}${clean}`];
+      const dimsAttr = dims ? ` width="${dims.width}" height="${dims.height}"` : '';
+      return `<img src="${token.href}" alt="${token.text ?? ''}"${dimsAttr}>`;
+    },
+  },
+});
+
+function renderMarkdown(markdown: string, urlPath: string): string {
+  currentPostDir = urlPath.includes('/') ? `${urlPath.split('/').slice(0, -1).join('/')}/` : '';
+  return marked.parse(markdown, { async: false }) as string;
+}
+
+/** Fallback title derived from the slug: 'my-post' -> 'My Post'. */
+function extractTitle(urlPath: string): string {
+  return urlPath
+    .split('/')
+    .pop()!
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+/** Fallback excerpt from rendered HTML: first <p> content, tags stripped. */
+function extractExcerptFromHtml(html: string): string {
+  const first = html.match(/<p>([\s\S]*?)<\/p>/)?.[1] ?? '';
+  return first.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+}
+
+async function getPostMetas(): Promise<PostMeta[]> {
+  const files = postFiles.filter((f) => f.endsWith('.md'));
+
+  // Run all git queries concurrently — each is an independent process spawn.
+  const results = await Promise.all(
+    files.map(async (file): Promise<PostMeta | null> => {
+      try {
+        const { stdout } = await execFileAsync(
+          'git',
+          [
+            'log',
+            // Only the commit that added the file — its creation date, so
+            // later edits don't change the post's date metadata.
+            '--diff-filter=A',
+            '--format=%ad',
+            // ISO 8601 with time part — parseable by new Date() in blog.ts.
+            '--date=format:%Y-%m-%dT%H:%M:%S%z',
+            '--',
+            file,
+          ],
+          { cwd: postsDir, encoding: 'utf-8' },
+        );
+        const out = stdout.trim();
+        if (!out) return null; // No commit for this file yet — skip it.
+        const date = out.split('\n')[0];
+        // Parse frontmatter once here so app code never needs gray-matter
+        // (which doesn't work in the browser). Unquoted YAML dates become
+        // Date objects — normalize them to ISO strings.
+        const { data, content } = matter(readFileSync(join(postsDir, file), 'utf-8'));
+        const pick = (key: string): string | undefined => {
+          const value = data[key];
+          if (typeof value === 'string') return value;
+          if (value instanceof Date) return value.toISOString();
+          if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+          return undefined;
+        };
+        const urlPath = file.replace(/\.md$/, '');
+        // Render the body (frontmatter stripped) to HTML here, so app code
+        // never needs marked either.
+        const html = rewriteRefs(renderMarkdown(content, urlPath));
+        // Effective title/excerpt resolved here too: frontmatter wins, then
+        // the markdown heading / first paragraph, then the slug.
+        const title = pick('title') ?? content.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? extractTitle(urlPath);
+        return {
+          urlPath,
+          path: file,
+          date,
+          indexed: /^\d+\//.test(file),
+          frontmatter: {
+            title: pick('title'),
+            date: pick('date'),
+            excerpt: pick('excerpt'),
+          },
+          title,
+          excerpt: pick('excerpt') ?? extractExcerptFromHtml(html),
+          html,
+        };
+      } catch {
+        return null; // Not a git repo or git unavailable — skip.
+      }
+    }),
+  );
+  return results.filter((m) => m !== null);
+}
+
+const postMetas = await getPostMetas();
 
 const virtualPostMeta = 'virtual:post-meta';
 
@@ -174,20 +256,27 @@ function buildRssXml(): string {
     copyright: '',
   });
 
-  // Newest first. Only indexed posts appear in the feed.
-  for (const meta of [...postMetas]
+  // Newest first, by the effective date (frontmatter overrides git date).
+  // Only indexed posts appear in the feed.
+  const items = [...postMetas]
     .filter((m) => m.indexed)
-    .sort((a, b) => b.date.localeCompare(a.date))) {
-    const url = `${SITE_URL}/${meta.urlPath}/`;
-    // Use the post's `# Heading` as the title; fall back to the slug.
-    const md = readFileSync(join(postsDir, meta.path), 'utf-8');
-    const title =
-      md.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? meta.urlPath.split('/').pop()!;
+    .map((meta) => {
+      const url = `${SITE_URL}/${meta.urlPath}/`;
+      const md = readFileSync(join(postsDir, meta.path), 'utf-8');
+      const fm = meta.frontmatter;
+      // Frontmatter overrides: title beats `# Heading`, date beats git date.
+      const title =
+        fm.title ?? md.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? meta.urlPath.split('/').pop()!;
+      return { url, title, date: new Date(fm.date ?? meta.date) };
+    })
+    .sort((a, b) => b.date.getTime() - a.date.getTime());
+
+  for (const { url, title, date } of items) {
     feed.addItem({
       title,
       id: url,
       link: url,
-      date: new Date(`${meta.date}T00:00:00Z`),
+      date,
     });
   }
 
