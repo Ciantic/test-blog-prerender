@@ -190,7 +190,8 @@ async function getPostMetas(): Promise<PostMeta[]> {
   return results.filter((m) => m !== null);
 }
 
-const postMetas = await getPostMetas();
+// Mutable so dev-mode file watching can refresh it (see postMetaPlugin).
+let postMetas = await getPostMetas();
 
 const virtualPostMeta = 'virtual:post-meta';
 
@@ -302,8 +303,15 @@ function rssPlugin(): Plugin {
 }
 
 // Exposes `postMetas` to app code in every build (dev, SSR, client).
+// In dev mode it also watches posts/ for markdown changes and invalidates
+// the virtual module, so editing a post live-reloads without restarting.
 function postMetaPlugin(): Plugin {
   const resolvedId = '\0' + virtualPostMeta;
+  const generateVirtualModule = () =>
+    [
+      `export const postMetas = ${JSON.stringify(postMetas)};`,
+      `export const imageDims = ${JSON.stringify(imageDims)};`,
+    ].join('\n');
   return {
     name: 'post-meta-virtual-module',
     resolveId(id) {
@@ -311,10 +319,27 @@ function postMetaPlugin(): Plugin {
     },
     load(id) {
       if (id !== resolvedId) return;
-      return [
-        `export const postMetas = ${JSON.stringify(postMetas)};`,
-        `export const imageDims = ${JSON.stringify(imageDims)};`,
-      ].join('\n');
+      return generateVirtualModule();
+    },
+    configureServer(server) {
+      server.watcher.add(postsDir);
+      let refreshing = false;
+
+      // Live-reload post metas in dev server when updating a post file.
+      const refresh = async () => {
+        if (refreshing) return; // Editors often fire several events per save.
+        refreshing = true;
+        try {
+          postMetas = await getPostMetas();
+          const mod = server.moduleGraph.getModuleById(resolvedId);
+          if (mod) await server.moduleGraph.invalidateModule(mod);
+        } finally {
+          refreshing = false;
+        }
+      };
+      server.watcher.on('change', refresh);
+      server.watcher.on('add', refresh);
+      server.watcher.on('unlink', refresh);
     },
   };
 }
