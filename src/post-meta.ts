@@ -9,7 +9,11 @@ export interface PostMetaIndex {
   urlPath: string;
   /** Path of the markdown file inside posts/, e.g. '2026/my-post.md'. */
   path: string;
-  /** Commit date as ISO 8601, e.g. 2026-01-30T14:45:02+02:00. */
+  /**
+   * Effective publish date, resolved at build time (frontmatter overrides
+   * git commit date) and normalized: YYYY-MM-DD for date-only posts,
+   * YYYY-MM-DDTHH:mm when a time part is present. Sorts lexicographically.
+   */
   date: string;
   /**
    * Whether the post appears in the blog index and RSS feed. Only posts

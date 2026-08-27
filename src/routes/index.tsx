@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/solid-router';
-import { getPosts, formatDateFinnish, type BlogIndexEntry } from '../lib/blog';
+import { getPosts, formatDateFinnish } from '../lib/blog';
+import type { PostMetaIndex } from '../post-meta';
 
 function Home() {
   // Typed by the loader's return type.
@@ -9,7 +10,7 @@ function Home() {
   // both the git date and what the URL path suggests) for the year-marked
   // list layout.
   const byYear = () => {
-    const groups = new Map<number, BlogIndexEntry[]>();
+    const groups = new Map<number, PostMetaIndex[]>();
     for (const post of posts()) {
       const year = Number(post.date.slice(0, 4));
       const list = groups.get(year);

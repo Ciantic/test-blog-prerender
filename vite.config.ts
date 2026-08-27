@@ -168,10 +168,21 @@ async function getPostMetas(): Promise<PostMeta[]> {
         // Effective title/excerpt resolved here too: frontmatter wins, then
         // the markdown heading / first paragraph, then the slug.
         const title = pick('title') ?? content.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? extractTitle(urlPath);
+        // Effective publish date: frontmatter overrides git date. Normalized
+        // so app code never needs Date parsing: date-only posts stay
+        // YYYY-MM-DD (Finnish formatter + year grouping), datetimes become
+        // YYYY-MM-DDTHH:mm. Sorting works lexicographically on both forms.
+        const fmDate = data.date instanceof Date ? data.date : undefined;
+        const parsed = fmDate ?? new Date(pick('date') ?? date);
+        if (Number.isNaN(parsed.getTime())) {
+          throw new Error(`Post ${file} has an unparseable date`);
+        }
+        const iso = parsed.toISOString();
+        const effectiveDate = iso.endsWith('T00:00:00.000Z') ? iso.slice(0, 10) : iso.slice(0, 16);
         return {
           urlPath,
           path: file,
-          date,
+          date: effectiveDate,
           indexed: /^\d+\//.test(file),
           frontmatter: {
             title: pick('title'),
