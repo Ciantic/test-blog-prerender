@@ -11,13 +11,36 @@ interface SizedImage extends Tokens.Image {
   dims?: { width: number; height: number };
 }
 
+/**
+ * Rewrite a relative ref (link href / image src) to be site-relative.
+ * Returns null to leave it untouched. External URLs, absolute paths and
+ * fragment anchors pass through; `.md` refs point at the rendered post URL.
+ */
+function rewriteRef(target: string): string | null {
+  if (/^(https?:)?\/\//i.test(target) || target.startsWith('/') || target.startsWith('#')) {
+    return null;
+  }
+  const clean = target.replace(/^\.\//, '');
+  if (clean.endsWith('.md')) {
+    return `../${clean.slice(0, -'.md'.length)}/`;
+  }
+  return `../${clean}`;
+}
+
 class PostImageRenderer extends Renderer {
+  link(this: PostImageRenderer, token: Tokens.Link): string {
+    // Rewrite the href in place so super.link() handles escaping/cleaning.
+    const rewritten = rewriteRef(token.href);
+    if (rewritten !== null) token.href = rewritten;
+    return super.link(token) as string;
+  }
   image(this: PostImageRenderer, token: Tokens.Image): string {
     // dims were computed by the async walkTokens step, which ran before this
     // renderer (the parser awaits walkTokens when async: true).
     const dims = (token as SizedImage).dims;
     const dimsAttr = dims ? ` width="${dims.width}" height="${dims.height}"` : '';
-    return `<img src="${token.href}" alt="${token.text ?? ''}"${dimsAttr}>`;
+    const href = rewriteRef(token.href) ?? token.href;
+    return `<img src="${href}" alt="${token.text ?? ''}"${dimsAttr}>`;
   }
 }
 

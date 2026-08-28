@@ -22,19 +22,6 @@ function extractExcerptFromHtml(html: string): string {
   return first.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
 }
 
-function rewriteRefs(html: string): string {
-  return html.replace(/\b(src|href)="([^"]*)"/g, (_all, attr: string, target: string) => {
-    if (/^(https?:)?\/\//i.test(target) || target.startsWith('/') || target.startsWith('#')) {
-      return _all;
-    }
-    const clean = target.replace(/^\.\//, '');
-    if (clean.endsWith('.md')) {
-      return `${attr}="../${clean.slice(0, -'.md'.length)}/"`;
-    }
-    return `${attr}="../${clean}"`;
-  });
-}
-
 async function computePostMeta(absPath: string): Promise<PostMeta | null> {
   try {
     const { stdout } = await execFileAsync(
@@ -71,7 +58,7 @@ async function computePostMeta(absPath: string): Promise<PostMeta | null> {
     const urlPath = file.replace(/\.md$/, '');
     // Render the body (frontmatter stripped) to HTML here, so app code
     // never needs marked either.
-    const html = rewriteRefs(await renderMarkdown(content, absPath));
+    const html = await renderMarkdown(content, absPath);
     // Effective title/excerpt resolved here too: frontmatter wins, then
     // the markdown heading / first paragraph, then the slug.
     const title = pick('title') ?? content.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? "Unknown title";
