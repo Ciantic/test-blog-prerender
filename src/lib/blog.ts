@@ -2,10 +2,129 @@
 import { createServerFn } from '@tanstack/solid-start';
 import { staticFunctionMiddleware } from '@tanstack/start-static-server-functions';
 import { Feed } from 'feed';
-import { getPostIndexData, getPostData } from './markdown';
+import { PostMeta, PostMetaIndex } from '../post-meta';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import matter from 'gray-matter';
+import { readFileSync } from 'node:fs';
+import { dirname, basename, join } from 'node:path';
+import { renderMarkdown } from './markdown';
+import { getPostFiles } from './common';
+const execFileAsync = promisify(execFile);
 
 const SITE_URL = 'https://example.com';
 
+const POSTS_DIR = import.meta.env.VITE_POSTS_DIR;
+
+
+function extractExcerptFromHtml(html: string): string {
+  const first = html.match(/<p>([\s\S]*?)<\/p>/)?.[1] ?? '';
+  return first.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function rewriteRefs(html: string): string {
+  return html.replace(/\b(src|href)="([^"]*)"/g, (_all, attr: string, target: string) => {
+    if (/^(https?:)?\/\//i.test(target) || target.startsWith('/') || target.startsWith('#')) {
+      return _all;
+    }
+    const clean = target.replace(/^\.\//, '');
+    if (clean.endsWith('.md')) {
+      return `${attr}="../${clean.slice(0, -'.md'.length)}/"`;
+    }
+    return `${attr}="../${clean}"`;
+  });
+}
+
+async function computePostMeta(absPath: string): Promise<PostMeta | null> {
+  try {
+    const { stdout } = await execFileAsync(
+      'git',
+      [
+        'log',
+        // Only the commit that added the file — its creation date, so
+        // later edits don't change the post's date metadata.
+        '--diff-filter=A',
+        '--format=%ad',
+        // ISO 8601 with time part — parseable by new Date() in blog.ts.
+        '--date=format:%Y-%m-%dT%H:%M:%S%z',
+        '--',
+        basename(absPath),
+      ],
+      { cwd: dirname(absPath), encoding: 'utf-8' },
+    );
+    const out = stdout.trim();
+    if (!out) return null; // No commit for this file yet — skip it.
+    const date = out.split('\n')[0];
+    // Parse frontmatter once here so app code never needs gray-matter
+    // (which doesn't work in the browser). Unquoted YAML dates become
+    // Date objects — normalize them to ISO strings.
+    const { data, content } = matter(readFileSync(absPath, 'utf-8'));
+    const pick = (key: string): string | undefined => {
+      const value = data[key];
+      if (typeof value === 'string') return value;
+      if (value instanceof Date) return value.toISOString();
+      if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+      return undefined;
+    };
+    // Path relative to the posts dir, used for the URL slug and the `path` field.
+    const file = absPath.slice(POSTS_DIR.length + 1).replaceAll('\\', '/');
+    const urlPath = file.replace(/\.md$/, '');
+    // Render the body (frontmatter stripped) to HTML here, so app code
+    // never needs marked either.
+    const html = rewriteRefs(await renderMarkdown(content, absPath));
+    // Effective title/excerpt resolved here too: frontmatter wins, then
+    // the markdown heading / first paragraph, then the slug.
+    const title = pick('title') ?? content.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? "Unknown title";
+    // Effective publish date: frontmatter overrides git date. Normalized
+    // so app code never needs Date parsing: date-only posts stay
+    // YYYY-MM-DD (Finnish formatter + year grouping), datetimes become
+    // YYYY-MM-DDTHH:mm. Sorting works lexicographically on both forms.
+    const fmDate = data.date instanceof Date ? data.date : undefined;
+    const parsed = fmDate ?? new Date(pick('date') ?? date);
+    if (Number.isNaN(parsed.getTime())) {
+      throw new Error(`Post ${file} has an unparseable date`);
+    }
+    const iso = parsed.toISOString();
+    const effectiveDate = iso.endsWith('T00:00:00.000Z') ? iso.slice(0, 10) : iso.slice(0, 16);
+    return {
+      urlPath,
+      path: file,
+      date: effectiveDate,
+      indexed: /^\d+\//.test(file),
+      frontmatter: {
+        title: pick('title'),
+        date: pick('date'),
+        excerpt: pick('excerpt'),
+      },
+      title,
+      excerpt: pick('excerpt') ?? extractExcerptFromHtml(html),
+      html,
+    };
+  } catch {
+    return null; // Not a git repo or git unavailable — skip.
+  }
+}
+
+async function getPostMetas(): Promise<PostMeta[]> {
+  const files = getPostFiles(POSTS_DIR).filter((f) => f.endsWith('.md'));
+  const results = await Promise.all(files.map((f) => computePostMeta(f)));
+  return results.filter((m) => m !== null);
+}
+
+
+export async function getPostData(urlPath: string): Promise<PostMeta | undefined> {
+  const absPath = join(POSTS_DIR, `${urlPath}.md`);
+  if (!getPostFiles(POSTS_DIR).includes(absPath)) return undefined;
+  return (await computePostMeta(absPath)) ?? undefined;
+}
+
+
+export async function getPostIndexData(): Promise<PostMetaIndex[]> {
+  return (await getPostMetas())
+    .filter((meta) => meta.indexed)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .map(({ html: _html, ...index }) => index);
+}
 
 export const getPosts = createServerFn({ method: 'GET' })
   .middleware([staticFunctionMiddleware as any])

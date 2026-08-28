@@ -6,10 +6,13 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { lookup as mimeTypeOf } from 'mime-types';
 import type { Plugin } from 'vite';
-import { getPostFiles } from './src/lib/markdown';
+import { getPostFiles } from './src/lib/common';
 
 const POSTS_DIR = join(import.meta.dirname, 'posts');
 const POSTS_FILES = getPostFiles(POSTS_DIR);
+// getPostFiles returns absolute paths; some consumers need the path relative
+// to the posts dir (prerender URLs, emitted asset names).
+const relative = (p: string) => p.slice(POSTS_DIR.length + 1);
 
 
 function postsAssetsPlugin(): Plugin {
@@ -38,11 +41,11 @@ function postsAssetsPlugin(): Plugin {
     generateBundle() {
       // Only the client build produces deployable static assets.
       if (this.environment.name !== 'client') return;
-      for (const rel of POSTS_FILES.filter((f) => !f.endsWith('.md'))) {
+      for (const absPath of POSTS_FILES.filter((f) => !f.endsWith('.md'))) {
         this.emitFile({
           type: 'asset',
-          fileName: rel,
-          source: readFileSync(join(POSTS_DIR, rel)),
+          fileName: relative(absPath),
+          source: readFileSync(absPath),
         });
       }
     },
@@ -81,7 +84,7 @@ export default defineConfig({
         { path: '/rss.xml' },
         ...POSTS_FILES
           .filter((f) => f.endsWith('.md'))
-          .map((f) => ({ path: `/${f.replace(/\.md$/, '')}/` })),
+          .map((f) => ({ path: `/${relative(f).replace(/\.md$/, '')}/` })),
       ],
     }),
     // vite-plugin-solid in SSR mode — the supported Solid plugin for
