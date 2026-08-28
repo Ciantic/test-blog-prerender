@@ -2,12 +2,10 @@ import { tanstackStart } from '@tanstack/solid-start/plugin/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import solid from 'vite-plugin-solid';
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { lookup as mimeTypeOf } from 'mime-types';
-import type { Plugin } from 'vite';
 import { getPostFiles } from './src/lib/common';
 import { viteCachePlugin } from './src/lib/vite-cache-plugin';
+import { postAssetsPlugin } from './src/lib/vite-post-assets-plugin';
 
 const POSTS_DIR = join(import.meta.dirname, 'posts');
 const POSTS_FILES = getPostFiles(POSTS_DIR);
@@ -19,44 +17,6 @@ const CACHE_DIR = join(import.meta.dirname, 'node_modules/.vite');
 // to the posts dir (prerender URLs, emitted asset names).
 const relative = (p: string) => p.slice(POSTS_DIR.length + 1);
 
-
-function postsAssetsPlugin(): Plugin {
-  return {
-    name: 'post-assets-server',
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        const url = (req.url ?? '').split('?')[0];
-        // Only handle paths that don't belong to Vite/app code. App code
-        // lives under /src, /@fs, /@id, /node_modules and known routes.
-        if (!url.startsWith('/') || url.startsWith('/@') || url.startsWith('/src/') || url.startsWith('/node_modules/')) {
-          return next();
-        }
-        const rel = decodeURIComponent(url.replace(/^\//, ''));
-        if (!rel || rel.includes('..')) return next();
-        try {
-          const data = readFileSync(join(POSTS_DIR, rel));
-          res.setHeader('Content-Type', mimeTypeOf(rel) || 'application/octet-stream');
-          res.setHeader('Cache-Control', 'no-cache');
-          res.end(data);
-        } catch {
-          next();
-        }
-      });
-    },
-    generateBundle() {
-      // Only the client build produces deployable static assets.
-      if (this.environment.name !== 'client') return;
-      for (const absPath of POSTS_FILES.filter((f) => !f.endsWith('.md'))) {
-        this.emitFile({
-          type: 'asset',
-          fileName: relative(absPath),
-          source: readFileSync(absPath),
-        });
-      }
-    },
-  };
-}
-
 export default defineConfig({
   cacheDir: CACHE_DIR,
   define: {
@@ -67,7 +27,7 @@ export default defineConfig({
   // static HTML at build time.
   plugins: [
     viteCachePlugin(CACHE_DIR),
-    postsAssetsPlugin(),
+    postAssetsPlugin(POSTS_DIR, POSTS_FILES),
     tanstackStart({
       prerender: {
         // Enable prerendering.
