@@ -17,11 +17,6 @@ const SITE_URL = 'https://example.com';
 const POSTS_DIR = import.meta.env.VITE_POSTS_DIR;
 
 
-function extractExcerptFromHtml(html: string): string {
-  const first = html.match(/<p>([\s\S]*?)<\/p>/)?.[1] ?? '';
-  return first.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-}
-
 async function computePostMeta(absPath: string): Promise<PostMeta | null> {
   try {
     const { stdout } = await execFileAsync(
@@ -57,8 +52,9 @@ async function computePostMeta(absPath: string): Promise<PostMeta | null> {
     const file = absPath.slice(POSTS_DIR.length + 1).replaceAll('\\', '/');
     const urlPath = file.replace(/\.md$/, '');
     // Render the body (frontmatter stripped) to HTML here, so app code
-    // never needs marked either.
-    const html = await renderMarkdown(content, absPath);
+    // never needs marked either. The excerpt fallback (first paragraph as
+    // plain text) is derived from the token tree at the same time.
+    const { html, excerpt } = await renderMarkdown(content, absPath);
     // Effective title/excerpt resolved here too: frontmatter wins, then
     // the markdown heading / first paragraph, then the slug.
     const title = pick('title') ?? content.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? "Unknown title";
@@ -84,7 +80,7 @@ async function computePostMeta(absPath: string): Promise<PostMeta | null> {
         excerpt: pick('excerpt'),
       },
       title,
-      excerpt: pick('excerpt') ?? extractExcerptFromHtml(html),
+      excerpt: pick('excerpt') ?? excerpt,
       html,
     };
   } catch {

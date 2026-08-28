@@ -27,6 +27,21 @@ function rewriteRef(target: string): string | null {
   return `../${clean}`;
 }
 
+/** Plain text of an inline token tree (used for the excerpt). */
+function inlineText(tokens: Token[]): string {
+  let out = '';
+  for (const token of tokens) {
+    if (token.type === 'br') {
+      out += ' ';
+    } else {
+      const anyToken = token as Token & { tokens?: Token[]; text?: string };
+      if (anyToken.tokens) out += inlineText(anyToken.tokens);
+      else if (anyToken.text) out += anyToken.text;
+    }
+  }
+  return out;
+}
+
 class PostImageRenderer extends Renderer {
   link(this: PostImageRenderer, token: Tokens.Link): string {
     // Rewrite the href in place so super.link() handles escaping/cleaning.
@@ -44,9 +59,11 @@ class PostImageRenderer extends Renderer {
   }
 }
 
-export function renderMarkdown(markdown: string, absPath: string): Promise<string> {
+export function renderMarkdown(markdown: string, absPath: string): Promise<{ html: string; excerpt: string }> {
   // The post's directory — image refs in the markdown are relative to it.
   const postDir = dirname(absPath);
+  // First paragraph (in document order) as plain text — the excerpt fallback.
+  let excerpt = '';
   // walkTokens runs for every token before rendering. Making it async lets us
   // read each image in this post with non-blocking I/O (only the images that
   // actually appear) and stash the dims on the token for the renderer above.
@@ -62,11 +79,13 @@ export function renderMarkdown(markdown: string, absPath: string): Promise<strin
       } catch {
         // Unreadable or unsupported image — leave it without dimensions.
       }
+    } else if (token.type === 'paragraph' && !excerpt && token.tokens) {
+      excerpt = inlineText(token.tokens).replace(/\s+/g, ' ').trim();
     }
   };
   return marked.parse(markdown, {
     async: true,
     walkTokens,
     renderer: new PostImageRenderer(),
-  }) as Promise<string>;
+  }).then((html) => ({ html, excerpt }));
 }
