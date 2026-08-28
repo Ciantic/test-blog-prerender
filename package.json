@@ -6,7 +6,7 @@
   "scripts": {
     "start": "vite",
     "dev": "vite",
-    "build": "vite build 2>&1 | tee last-build.txt",
+    "build": "vite build | tee >(grep '^dist/client' > last-build.txt)",
     "serve": "vite preview",
     "serve:static": "python3 -m http.server 4173 --directory dist/client",
     "typecheck": "tsc --noEmit",
