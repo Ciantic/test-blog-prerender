@@ -8,7 +8,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, basename, join } from 'node:path';
 import { renderMarkdown } from './markdown';
 import { getPostFiles } from './common';
-import { memoizeFile } from './vite-caching';
+import { memoizeFile } from './vite-cache-plugin';
 import {
   SITE_URL,
   SITE_NAME,
@@ -23,7 +23,7 @@ const POSTS_DIR = import.meta.env.VITE_POSTS_DIR;
 
 
 // Expensive work (git date + markdown render) cached to Vite's cache dir and
-// invalidated when the post file's mtime/size change. See vite-caching.ts.
+// invalidated when the post file's mtime/size change. See vite-cache-plugin.ts.
 async function computePostMeta(absPath: string): Promise<PostMeta | null> {
   return memoizeFile(absPath, absPath, () => computePostMetaUncached(absPath));
 }
