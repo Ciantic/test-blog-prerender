@@ -24,7 +24,7 @@ function AboutPage() {
             Image dimensions are computed at build time and emitted as width/height attributes.
           </li>
           <li>
-            Supports "non-indexed" posts (drafts) that are not linked from the blog index or RSS feed. For example see <a href="/other/">Other -page</a>.
+            Supports "non-indexed" posts (drafts) that are not linked from the blog index or RSS feed.
           </li>
         </ul>
         What it doesn't do at least yet: 
