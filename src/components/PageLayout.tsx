@@ -78,18 +78,10 @@ function PageLayout(props: ParentProps) {
             <a href="/rss.xml" class="link link-hover">
               RSS
             </a>
-            <a
-              href="https://docs.solidjs.com"
-              target="_blank"
-              rel="noreferrer"
-              class="link link-hover"
-            >
-              Solid Docs
-            </a>
           </nav>
           <aside class="justify-self-end text-right">
-            <p>
-              &copy; {new Date().getFullYear()} {SITE_NAME}. Built with SolidJS.
+            <p class="text-base-content/25">
+              Built with SolidJS 2.
             </p>
           </aside>
         </div>

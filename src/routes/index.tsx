@@ -2,6 +2,7 @@ import { Link, createFileRoute } from '@tanstack/solid-router';
 import { formatDateFinnish } from '../lib/date';
 import type { PostMetaIndex } from '../post-meta';
 import { getPosts } from '../lib/api';
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE } from '../site';
 
 function Home() {
   // Typed by the loader's return type.
@@ -24,9 +25,9 @@ function Home() {
   return (
     <main class="container mx-auto max-w-3xl px-4 py-12">
       <header class="mb-10">
-        <h1 class="text-5xl font-bold tracking-tight">Blog</h1>
-        <p class="mt-3 text-base-content/60">
-          Notes on SolidJS, routing and prerendering.
+        <h1 class="text-5xl font-bold tracking-tight sr-only">{SITE_NAME}</h1>
+        <p class="mt-3 text-base-content/60 text-lg sm:text-xl">
+          {SITE_DESCRIPTION}
         </p>
       </header>
 
@@ -76,6 +77,6 @@ function Home() {
 
 export const Route = createFileRoute('/')({
   loader: async () => getPosts(),
-  head: () => ({ meta: [{ title: 'Blog - Solid App' }] }),
+  head: () => ({ meta: [{ title: SITE_TITLE }] }),
   component: Home,
 });
