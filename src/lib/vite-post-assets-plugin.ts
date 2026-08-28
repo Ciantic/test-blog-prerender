@@ -39,7 +39,9 @@ export function postAssetsPlugin(postsDir: string, postFiles: string[]): Plugin 
     generateBundle() {
       // Only the client build produces deployable static assets.
       if (this.environment.name !== 'client') return;
-      for (const absPath of postFiles.filter((f) => !f.endsWith('.md'))) {
+      // Ignore markdown (handled as pages) and hidden files (dotfiles/dirs).
+      const isHidden = (f: string) => f.split(/[\\/]/).some((seg) => seg.startsWith('.'));
+      for (const absPath of postFiles.filter((f) => !f.endsWith('.md') && !isHidden(f))) {
         this.emitFile({
           type: 'asset',
           fileName: rel(postsDir, absPath),
