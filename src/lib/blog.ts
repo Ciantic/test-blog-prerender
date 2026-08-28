@@ -6,7 +6,7 @@ import { PostMeta, PostMetaIndex } from '../post-meta';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import matter from 'gray-matter';
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { dirname, basename, join } from 'node:path';
 import { renderMarkdown } from './markdown';
 import { getPostFiles } from './common';
@@ -40,7 +40,7 @@ async function computePostMeta(absPath: string): Promise<PostMeta | null> {
     // Parse frontmatter once here so app code never needs gray-matter
     // (which doesn't work in the browser). Unquoted YAML dates become
     // Date objects — normalize them to ISO strings.
-    const { data, content } = matter(readFileSync(absPath, 'utf-8'));
+    const { data, content } = matter(await readFile(absPath, 'utf-8'));
     const pick = (key: string): string | undefined => {
       const value = data[key];
       if (typeof value === 'string') return value;
