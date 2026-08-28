@@ -20,6 +20,19 @@ function AboutPage() {
             An RSS feed is generated at build time at{' '}
             <a href="/rss.xml">/rss.xml</a>.
           </li>
+          <li>
+            Image dimensions are computed at build time and emitted as width/height attributes.
+          </li>
+          <li>
+            Supports "non-indexed" posts (drafts) that are not linked from the blog index or RSS feed. For example see <a href="/other/">Other -page</a>.
+          </li>
+        </ul>
+        What it doesn't do at least yet: 
+
+        <ul>
+          <li>Comments or other dynamic functionality</li>
+          <li>RSS paging</li>
+          <li>Might not be very performant</li>
         </ul>
       </div>
       <p class="mt-20">
