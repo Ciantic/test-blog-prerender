@@ -14,5 +14,3 @@ src/routes/
 ```
 
 Dynamic segments like `$slug` become route params you can read in loaders.
-
-<Counter />
