@@ -95,6 +95,15 @@ export function renderMarkdown(markdown: string, absPath: string): Promise<{ htm
       }
     } else if (token.type === 'paragraph' && !excerpt && token.tokens) {
       excerpt = inlineText(token.tokens).replace(/\s+/g, ' ').trim();
+    } else if (token.type === 'html') {
+      // Widget placeholders: a self-closing tag with a capitalized name like
+      // <Counter /> becomes a mountable <div data-widget="Counter">. The
+      // client (src/lib/widgets.ts) swaps in the real Solid component.
+      const htmlToken = token as Tokens.HTML;
+      htmlToken.text = htmlToken.text.replace(
+        /<([A-Z][A-Za-z0-9]*)\s*\/\s*>/g,
+        '<div data-widget="$1"></div>',
+      );
     } else if (token.type === 'code') {
       const code = token as HighlightedCode;
       // First word of the info string is the language (e.g. "tsx" from "```tsx").
