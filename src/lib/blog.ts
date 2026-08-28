@@ -9,6 +9,13 @@ import { dirname, basename, join } from 'node:path';
 import { renderMarkdown } from './markdown';
 import { getPostFiles } from './common';
 import { memoizeFile } from './vite-caching';
+import {
+  SITE_URL,
+  SITE_NAME,
+  SITE_DESCRIPTION,
+  SITE_LANGUAGE,
+  SITE_COPYRIGHT,
+} from '../site';
 const execFileAsync = promisify(execFile);
 
 
@@ -113,20 +120,18 @@ export async function getPostIndexData(): Promise<PostMetaIndex[]> {
     .map(({ html: _html, ...index }) => index);
 }
 
-const SITE_URL = 'https://example.com';
-
 // Builds the RSS feed (raw XML string) from the committed, indexed posts.
 // Runs server-side only; the route that serves /rss.xml wraps this in a
 // Response. Kept here (not in api.ts) so it lives beside the other data
 // access code; api.ts's getRssXml server fn just calls this.
 export async function getRssXmlData(): Promise<string> {
   const feed = new Feed({
-    title: 'My Blog',
-    description: 'Static-prerendered Solid blog demo.',
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
     id: `${SITE_URL}/`,
     link: `${SITE_URL}/`,
-    language: 'fi',
-    copyright: '',
+    language: SITE_LANGUAGE,
+    copyright: SITE_COPYRIGHT,
   });
 
   // Newest first, by the effective date (frontmatter overrides git date).

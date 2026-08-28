@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/solid-router";
+import type { ParentProps } from "solid-js";
+import { SITE_NAME } from "../site";
 
-function PageLayout(props: { children: any }) {
+function PageLayout(props: ParentProps) {
   return (
     <div class="flex min-h-screen flex-col">
       {/* Background on the outer div keeps the bar full-width while the
@@ -11,7 +13,7 @@ function PageLayout(props: { children: any }) {
             {/* px-0: without it the button's own 16px padding pushes the brand
               text out of alignment with page content and footer links. */}
             <Link to="/" class="btn btn-primary  text-lg">
-              My Blog
+              {SITE_NAME}
             </Link>
           </div>
           <div class="navbar-center">
@@ -87,7 +89,7 @@ function PageLayout(props: { children: any }) {
           </nav>
           <aside class="justify-self-end text-right">
             <p>
-              &copy; {new Date().getFullYear()} My Blog. Built with SolidJS.
+              &copy; {new Date().getFullYear()} {SITE_NAME}. Built with SolidJS.
             </p>
           </aside>
         </div>

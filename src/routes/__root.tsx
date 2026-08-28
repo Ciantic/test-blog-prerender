@@ -10,6 +10,7 @@ import type { ParentProps } from 'solid-js';
 import appCss from '../App.css?url';
 import { installInsecureContextPolyfills } from '../lib/insecure-context-polyfill';
 import PageLayout from '../components/PageLayout';
+import { SITE_NAME } from '../site';
 
 // crypto.subtle is only available in secure contexts (HTTPS/localhost).
 // The static server function middleware needs it to hash cache keys, so
@@ -22,11 +23,11 @@ installInsecureContextPolyfills();
 // declare in their `head` options (titles here).
 export const Route = createRootRoute({
   head: () => ({
-    meta: [{ title: 'Solid App' }],
+    meta: [{ title: SITE_NAME }],
     links: [
       { rel: 'stylesheet', href: appCss },
       // RSS autodiscovery — lets feed readers find the feed from any page.
-      { rel: 'alternate', type: 'application/rss+xml', title: 'My Blog', href: '/rss.xml' },
+      { rel: 'alternate', type: 'application/rss+xml', title: SITE_NAME, href: '/rss.xml' },
     ],
   }),
   component: () => (
