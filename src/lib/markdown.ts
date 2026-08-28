@@ -4,11 +4,17 @@ import { dirname, join } from 'node:path';
 import { marked, Renderer } from 'marked';
 import type { Token, Tokens } from 'marked';
 import { imageSize } from 'image-size';
+import { codeToHtml } from 'shiki';
 
 
 /** An image token with pixel dims attached by the async sizing step. */
 interface SizedImage extends Tokens.Image {
   dims?: { width: number; height: number };
+}
+
+/** A code token with the highlighted HTML attached by the async walkTokens step. */
+interface HighlightedCode extends Tokens.Code {
+  highlighted?: string;
 }
 
 /**
@@ -57,6 +63,14 @@ class PostImageRenderer extends Renderer {
     const href = rewriteRef(token.href) ?? token.href;
     return `<img src="${href}" alt="${token.text ?? ''}"${dimsAttr}>`;
   }
+  code(this: PostImageRenderer, token: Tokens.Code): string {
+    // highlighted HTML was computed by the async walkTokens step (which runs
+    // before rendering when async: true). Fall back to the default escaped
+    // render for blocks that didn't get highlighted.
+    const highlighted = (token as HighlightedCode).highlighted;
+    if (highlighted) return highlighted;
+    return super.code(token) as string;
+  }
 }
 
 export function renderMarkdown(markdown: string, absPath: string): Promise<{ html: string; excerpt: string }> {
@@ -81,6 +95,21 @@ export function renderMarkdown(markdown: string, absPath: string): Promise<{ htm
       }
     } else if (token.type === 'paragraph' && !excerpt && token.tokens) {
       excerpt = inlineText(token.tokens).replace(/\s+/g, ' ').trim();
+    } else if (token.type === 'code') {
+      const code = token as HighlightedCode;
+      // First word of the info string is the language (e.g. "tsx" from "```tsx").
+      const lang = (code.lang ?? '').trim().split(/\s+/)[0];
+      // Dual themes emit --shiki-light/--shiki-dark CSS vars on each span so
+      // the code colors follow the daisyUI light/dark theme automatically.
+      code.highlighted = await codeToHtml(code.text, {
+        lang: lang || 'text',
+        themes: { light: 'github-light', dark: 'github-dark' },
+        // light-dark() resolves colors from the inherited `color-scheme`,
+        // which daisyUI drives via its theme-controller (it sets
+        // color-scheme: dark on :root in dark mode, no data-theme attr).
+        // This makes code colors follow the theme toggle automatically.
+        defaultColor: 'light-dark()',
+      });
     }
   };
   return marked.parse(markdown, {

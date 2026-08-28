@@ -28,6 +28,17 @@
   line-height: 1.35;
 }
 
+/* Shiki code blocks are colored inline via light-dark() (see markdown.ts),
+   which follows the inherited color-scheme that daisyUI's theme-controller
+   drives on :root. Keep the prose plugin's block styling from adding an
+   opaque background that fights shiki's own. */
+.prose pre.shiki {
+  /* background-color: transparent; */
+  /* Border flips with the theme via light-dark() — the same mechanism the
+     shiki colors use (see markdown.ts), following daisyUI's color-scheme. */
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.215), rgba(255, 255, 255, 0.215));
+}
+
 @plugin 'daisyui' {
   themes: bumblebee --default, sunset --prefersdark;
 }
