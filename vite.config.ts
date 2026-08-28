@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import solid from 'vite-plugin-solid';
 import { readFileSync } from 'node:fs';
+import { readdir, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { lookup as mimeTypeOf } from 'mime-types';
 import type { Plugin } from 'vite';
@@ -10,10 +11,39 @@ import { getPostFiles } from './src/lib/common';
 
 const POSTS_DIR = join(import.meta.dirname, 'posts');
 const POSTS_FILES = getPostFiles(POSTS_DIR);
+// Vite's cache directory. Set explicitly so it can be exposed to app code
+// (import.meta.env.VITE_CACHE_DIR) and the blog memoizer writes into the
+// same directory Vite does.
+const CACHE_DIR = join(import.meta.dirname, 'node_modules/.vite');
 // getPostFiles returns absolute paths; some consumers need the path relative
 // to the posts dir (prerender URLs, emitted asset names).
 const relative = (p: string) => p.slice(POSTS_DIR.length + 1);
 
+
+// Clear the memoized file cache (`file-*.json`) whenever Vite runs with
+// `--force` (exposed as `config.optimizeDeps.force`; dev server only) or the
+// `CLEAR_CACHE` env var is set (works for dev and build alike). Both force
+// a full recompute of the blog file cache.
+function clearFileCachePlugin(): Plugin {
+  return {
+    name: 'clear-file-cache',
+    configResolved(config) {
+      const forced = config.optimizeDeps.force || process.env.CLEAR_CACHE;
+      if (forced) {
+        void clearFileCache(CACHE_DIR);
+      }
+    },
+  };
+}
+
+async function clearFileCache(dir: string) {
+  const entries = await readdir(dir).catch(() => []);
+  await Promise.all(
+    entries
+      .filter((e) => e.startsWith('file-') && e.endsWith('.json'))
+      .map((e) => unlink(join(dir, e))),
+  );
+}
 
 function postsAssetsPlugin(): Plugin {
   return {
@@ -53,13 +83,16 @@ function postsAssetsPlugin(): Plugin {
 }
 
 export default defineConfig({
+  cacheDir: CACHE_DIR,
   define: {
     'import.meta.env.VITE_POSTS_DIR': JSON.stringify(POSTS_DIR),
+    'import.meta.env.VITE_CACHE_DIR': JSON.stringify(CACHE_DIR),
   },
   // TanStack Start owns the entries, dev serving, and the build. It scans
   // src/routes and generates src/routeTree.gen.ts, and prerenders the app to
   // static HTML at build time.
   plugins: [
+    clearFileCachePlugin(),
     postsAssetsPlugin(),
     tanstackStart({
       prerender: {

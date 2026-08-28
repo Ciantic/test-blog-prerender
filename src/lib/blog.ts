@@ -1,8 +1,6 @@
 
-import { createServerFn } from '@tanstack/solid-start';
-import { staticFunctionMiddleware } from '@tanstack/start-static-server-functions';
-import { Feed } from 'feed';
 import { PostMeta, PostMetaIndex } from '../post-meta';
+import { Feed } from 'feed';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import matter from 'gray-matter';
@@ -10,14 +8,20 @@ import { readFile } from 'node:fs/promises';
 import { dirname, basename, join } from 'node:path';
 import { renderMarkdown } from './markdown';
 import { getPostFiles } from './common';
+import { memoizeFile } from './vite-caching';
 const execFileAsync = promisify(execFile);
 
-const SITE_URL = 'https://example.com';
 
 const POSTS_DIR = import.meta.env.VITE_POSTS_DIR;
 
 
+// Expensive work (git date + markdown render) cached to Vite's cache dir and
+// invalidated when the post file's mtime/size change. See vite-caching.ts.
 async function computePostMeta(absPath: string): Promise<PostMeta | null> {
+  return memoizeFile(absPath, absPath, () => computePostMetaUncached(absPath));
+}
+
+async function computePostMetaUncached(absPath: string): Promise<PostMeta | null> {
   try {
     const { stdout } = await execFileAsync(
       'git',
@@ -109,24 +113,13 @@ export async function getPostIndexData(): Promise<PostMetaIndex[]> {
     .map(({ html: _html, ...index }) => index);
 }
 
-export const getPosts = createServerFn({ method: 'GET' })
-  .middleware([staticFunctionMiddleware as any])
-  .handler(async () => {
-    return await getPostIndexData();
-  });
-
-export const getPost = createServerFn({ method: 'GET' })
-  .validator((urlPath: string) => urlPath)
-  .middleware([staticFunctionMiddleware as any])
-  .handler(async ({ data: urlPath }) => {
-    return await getPostData(urlPath);
-  });
+const SITE_URL = 'https://example.com';
 
 // Builds the RSS feed (raw XML string) from the committed, indexed posts.
 // Runs server-side only; the route that serves /rss.xml wraps this in a
-// Response. Kept here with the other server fns so `feed` + markdown stay
-// out of the client bundle.
-export const getRssXml = createServerFn({ method: 'GET' }).handler(async () => {
+// Response. Kept here (not in api.ts) so it lives beside the other data
+// access code; api.ts's getRssXml server fn just calls this.
+export async function getRssXmlData(): Promise<string> {
   const feed = new Feed({
     title: 'My Blog',
     description: 'Static-prerendered Solid blog demo.',
@@ -155,10 +148,4 @@ export const getRssXml = createServerFn({ method: 'GET' }).handler(async () => {
   }
 
   return feed.rss2();
-});
-
-export function formatDateFinnish(date: string): string {
-  const [y, m, d] = date.split('T')[0].split('-').map(Number);
-  if (!y || !m || !d) return date;
-  return `${d}.${m}.${y}`;
 }

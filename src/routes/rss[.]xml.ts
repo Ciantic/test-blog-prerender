@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/solid-router';
-import { getRssXml } from '../lib/blog';
+import { getRssXml } from '../lib/api';
 
 // Serves /rss.xml as raw XML, outside the HTML document shell. A pure server
 // route: the GET handler returns a Response (content-type has no "html", so

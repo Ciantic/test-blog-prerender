@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/solid-router';
-import { getPost, formatDateFinnish } from '../lib/blog';
+import { getPost } from '../lib/api';
+import { formatDateFinnish } from '../lib/date';
 
 function PostPage() {
   // Typed by the loader's return type; reactive to param changes.

@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/solid-router';
-import { getPosts, formatDateFinnish } from '../lib/blog';
+import { formatDateFinnish } from '../lib/date';
 import type { PostMetaIndex } from '../post-meta';
+import { getPosts } from '../lib/api';
 
 function Home() {
   // Typed by the loader's return type.
