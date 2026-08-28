@@ -73,16 +73,38 @@ class PostImageRenderer extends Renderer {
   }
 }
 
-export function renderMarkdown(markdown: string, absPath: string): Promise<{ html: string; excerpt: string }> {
+/**
+ * Escape HTML in a plain-text title so it can't break out of the injected
+ * <h1> element (or XSS). Used when the body has no heading of its own and we
+ * inject one from frontmatter.
+ */
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+}
+
+export function renderMarkdown({
+  markdown,
+  absPath,
+  title,
+}: {
+  markdown: string,
+  absPath: string,
+  title?: string,
+}): Promise<{ html: string; excerpt: string }> {
   // The post's directory — image refs in the markdown are relative to it.
   const postDir = dirname(absPath);
   // First paragraph (in document order) as plain text — the excerpt fallback.
   let excerpt = '';
+  // Whether the document has its own top-level heading (ATX `#` or setext
+  // `Title\n=====`). When it doesn't, we inject an <h1> from fallbackTitle.
+  let hasHeading = false;
   // walkTokens runs for every token before rendering. Making it async lets us
   // read each image in this post with non-blocking I/O (only the images that
   // actually appear) and stash the dims on the token for the renderer above.
   const walkTokens = async (token: Token): Promise<void> => {
-    if (token.type === 'image') {
+    if (token.type === 'heading' && token.depth === 1) {
+      hasHeading = true;
+    } else if (token.type === 'image') {
       const image = token as SizedImage;
       try {
         const dims = imageSize(await readFile(join(postDir, image.href.replace(/^\.\//, ''))));
@@ -132,5 +154,13 @@ export function renderMarkdown(markdown: string, absPath: string): Promise<{ htm
     async: true,
     walkTokens,
     renderer: new PostImageRenderer(),
-  }).then((html) => ({ html, excerpt }));
+  }).then((html) => {
+    // Some old posts carry their title only in frontmatter, not as a heading
+    // in the body. Give those a visible <h1> (escaped) so the page isn't
+    // heading-less. Posts that already have a top-level heading are untouched.
+    if (!hasHeading && title) {
+      html = `<h1>${escapeHtml(title)}</h1>${html}`;
+    }
+    return { html, excerpt };
+  });
 }

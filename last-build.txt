@@ -1,6 +1,6 @@
 dist/client/2026/img/test-image.png     0.17 kB
 dist/client/.vite/manifest.json         2.54 kB │ gzip:  0.60 kB
-dist/client/assets/App-CAxpScT5.css    70.14 kB │ gzip: 11.62 kB
+dist/client/assets/App-v_sbjmB9.css    70.22 kB │ gzip: 11.64 kB
 dist/client/assets/date-BNKy4HL5.js     0.11 kB │ gzip:  0.12 kB
 dist/client/assets/routes-C-AoxIy3.js   0.43 kB │ gzip:  0.30 kB
 dist/client/assets/_-DvOPVH_Z.js        0.55 kB │ gzip:  0.37 kB
@@ -8,5 +8,5 @@ dist/client/assets/_-DQIZRRee.js        0.87 kB │ gzip:  0.52 kB
 dist/client/assets/about-BcDe2K6c.js    1.40 kB │ gzip:  0.79 kB
 dist/client/assets/routes-CIBFxvIJ.js   1.99 kB │ gzip:  1.04 kB
 dist/client/assets/api-B5P6iiyh.js     47.85 kB │ gzip: 14.30 kB
-dist/client/assets/index-B9D_lr8C.js   67.58 kB │ gzip: 23.90 kB
+dist/client/assets/index-C3XZyQx4.js   67.58 kB │ gzip: 23.90 kB
 dist/client/assets/link-CQiba5Ec.js    88.52 kB │ gzip: 32.19 kB

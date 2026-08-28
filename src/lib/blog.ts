@@ -65,7 +65,7 @@ async function computePostMetaUncached(absPath: string): Promise<PostMeta | null
     // Render the body (frontmatter stripped) to HTML here, so app code
     // never needs marked either. The excerpt fallback (first paragraph as
     // plain text) is derived from the token tree at the same time.
-    const { html, excerpt } = await renderMarkdown(content, absPath);
+    const { html, excerpt } = await renderMarkdown({ markdown: content, absPath, title: pick('title') });
     // Effective title/excerpt resolved here too: frontmatter wins, then
     // the markdown heading / first paragraph, then the slug.
     const title = pick('title') ?? content.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? "Unknown title";
