@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import { marked, Renderer } from 'marked';
 import type { Token, Tokens } from 'marked';
 import { imageSize } from 'image-size';
-import { codeToHtml } from 'shiki';
+import { codeToHtml, ShikiError } from 'shiki';
 
 
 /** An image token with pixel dims attached by the async sizing step. */
@@ -98,18 +98,34 @@ export function renderMarkdown(markdown: string, absPath: string): Promise<{ htm
     } else if (token.type === 'code') {
       const code = token as HighlightedCode;
       // First word of the info string is the language (e.g. "tsx" from "```tsx").
-      const lang = (code.lang ?? '').trim().split(/\s+/)[0];
+      // Normalize to a lowercase shiki language id so e.g. "C#" highlights as C#.
+      const lang = (code.lang ?? '').trim().split(/\s+/)[0].toLowerCase();
       // Dual themes emit --shiki-light/--shiki-dark CSS vars on each span so
       // the code colors follow the daisyUI light/dark theme automatically.
-      code.highlighted = await codeToHtml(code.text, {
-        lang: lang || 'text',
-        themes: { light: 'github-light', dark: 'github-dark' },
-        // light-dark() resolves colors from the inherited `color-scheme`,
-        // which daisyUI drives via its theme-controller (it sets
-        // color-scheme: dark on :root in dark mode, no data-theme attr).
-        // This makes code colors follow the theme toggle automatically.
-        defaultColor: 'light-dark()',
-      });
+      // Unknown/unrecognized languages are rendered as plain text (the `text`
+      // special lang) instead of throwing and failing the whole post render.
+      try {
+        code.highlighted = await codeToHtml(code.text, {
+          lang: lang || 'text',
+          themes: { light: 'github-light', dark: 'github-dark' },
+          // light-dark() resolves colors from the inherited `color-scheme`,
+          // which daisyUI drives via its theme-controller (it sets
+          // color-scheme: dark on :root in dark mode, no data-theme attr).
+          // This makes code colors follow the theme toggle automatically.
+          defaultColor: 'light-dark()',
+        });
+      } catch (error) {
+        if (error instanceof ShikiError) {
+          console.warn(`Shiki error in ${absPath}: ${error.message}. Falling back to unhighlighted code.`);
+          code.highlighted = await codeToHtml(code.text, {
+            lang: 'text',
+            themes: { light: 'github-light', dark: 'github-dark' },
+            defaultColor: 'light-dark()',
+          });
+        } else {
+          throw error;
+        }
+      }
     }
   };
   return marked.parse(markdown, {
