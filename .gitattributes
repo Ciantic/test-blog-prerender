@@ -1,0 +1,5 @@
+# Always keep the current version of last-build.txt when merging;
+# size-tracking file, conflicts not useful here.
+# To enable the driver on a new clone, run:
+#   git config --global merge.ours.driver true
+last-build.txt merge=ours
