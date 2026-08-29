@@ -9,30 +9,58 @@ function PageLayout(props: ParentProps) {
             navbar itself is capped at the same max width as page content. */}
       <div class="bg-base-200 shadow-sm">
         <div class="navbar mx-auto max-w-3xl px-4">
-          <div class="navbar-start">
-            {/* px-0: without it the button's own 16px padding pushes the brand
+          <div class="flex-1">
+                        {/* px-0: without it the button's own 16px padding pushes the brand
               text out of alignment with page content and footer links. */}
             <Link to="/" class="btn btn-primary  text-lg">
               {SITE_NAME}
             </Link>
+
           </div>
-          <div class="navbar-center">
+          <div class="flex-none">
             <ul class="menu menu-horizontal gap-1">
-              <li>
-                <Link to="/">All posts</Link>
-              </li>
               <li>
                 <Link to="/about/">About</Link>
               </li>
+              <li>
+                <Link to="/">Posts</Link>
+              </li>
             </ul>
+
           </div>
-          <div class="navbar-end">
+        </div>
+      </div>
+      
+      {props.children}
+
+      {/* Same pattern as the header: full-width background, content capped
+            at max-w-3xl to align with page content. */}
+      <footer class="bg-base-200 text-base-content/70 mt-auto text-sm">
+        {/* grid-cols-[auto_1fr]: daisyUI's .footer is a single-column grid;
+            two columns put the nav left and the copyright right. */}
+        <div class="footer mx-auto grid max-w-3xl grid-cols-[auto_1fr] items-center px-4 py-6">
+          <nav class="flex gap-4">
+            <ul class="menu menu-horizontal gap-1">
+              <li>
+                <Link to="/">Posts</Link>
+              </li>
+              <li>
+                <a href="/rss.xml" class="link link-hover">
+                  RSS
+                </a>
+              </li>
+            </ul>
+          </nav>
+          <aside class="justify-self-end text-right flex items-center gap-4 text-base-content/25">
+            <p class="">
+              Built with SolidJS 2.
+            </p>
             {/* 
             Theme Controller from here: 
             https://daisyui.com/components/theme-controller/ 
           */}
             <label
-              class="swap swap-rotate btn btn-ghost btn-circle"
+              class="swap swap-rotate btn btn-ghost btn-circle text-base-content/25"
               title="Toggle dark mode"
             >
               <input
@@ -56,33 +84,6 @@ function PageLayout(props: ParentProps) {
                 <path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z" />
               </svg>
             </label>
-          </div>
-        </div>
-      </div>
-      
-      {props.children}
-
-      {/* Same pattern as the header: full-width background, content capped
-            at max-w-3xl to align with page content. */}
-      <footer class="bg-base-200 text-base-content/70 mt-auto text-sm">
-        {/* grid-cols-[auto_1fr]: daisyUI's .footer is a single-column grid;
-            two columns put the nav left and the copyright right. */}
-        <div class="footer mx-auto grid max-w-3xl grid-cols-[auto_1fr] items-center px-4 py-6">
-          <nav class="flex gap-4">
-            <Link to="/" class="link link-hover">
-              Home
-            </Link>
-            <Link to="/about/" class="link link-hover">
-              About
-            </Link>
-            <a href="/rss.xml" class="link link-hover">
-              RSS
-            </a>
-          </nav>
-          <aside class="justify-self-end text-right">
-            <p class="text-base-content/25">
-              Built with SolidJS 2.
-            </p>
           </aside>
         </div>
       </footer>

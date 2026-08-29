@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/solid-router';
-import { formatDateFinnish } from '../lib/date';
+import { formatDate, formatDateShort } from '../lib/date';
 import type { PostMetaIndex } from '../post-meta';
 import { getPosts } from '../lib/api';
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE } from '../site';
@@ -33,7 +33,7 @@ function Home() {
 
       {byYear().map(([year, yearPosts]) => (
         <section class="mb-12">
-          <h2 class="mb-4 flex items-center gap-4 text-sm font-semibold uppercase tracking-widest text-base-content/50">
+          <h2 class="mb-4 flex items-center gap-4 font-semibold uppercase tracking-widest text-base-content/50 sticky top-0 z-10 bg-base-100">
             {year}
             <span class="h-px flex-1 bg-base-content/15" aria-hidden="true" />
           </h2>
@@ -47,9 +47,9 @@ function Home() {
                 >
                   <time
                     datetime={post.date}
-                    class="w-14 sm:w-24 shrink-0 tabular-nums text-sm text-base-content/50"
+                    class="w-15 shrink-0 text-base-content/50"
                   >
-                    {formatDateFinnish(post.date)}
+                    {formatDateShort(post.date)}
                   </time>
                   <div class="min-w-0">
                     <h3 class="text-xl font-semibold group-hover:text-primary">

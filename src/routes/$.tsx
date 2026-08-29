@@ -1,6 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/solid-router';
 import { getPost } from '../lib/api';
-import { formatDateFinnish } from '../lib/date';
+import { formatDate } from '../lib/date';
 import { Show } from 'solid-js';
 import { SITE_NAME, SITE_TITLE } from '../site';
 
@@ -11,7 +11,7 @@ function PostPage() {
     <main class="container mx-auto max-w-3xl px-4 py-12">
       <Show when={post().indexed}>
         <p class="text-sm text-base-content/50 mb-6">
-          {formatDateFinnish(post().date)}
+          {formatDate(post().date)}
         </p>
       </Show>
       <article class="prose lg:prose-lg">
