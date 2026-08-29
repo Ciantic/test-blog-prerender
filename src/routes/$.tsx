@@ -2,6 +2,7 @@ import { Link, createFileRoute } from '@tanstack/solid-router';
 import { getPost } from '../lib/api';
 import { formatDateFinnish } from '../lib/date';
 import { Show } from 'solid-js';
+import { SITE_NAME, SITE_TITLE } from '../site';
 
 function PostPage() {
   // Typed by the loader's return type; reactive to param changes.
@@ -38,8 +39,8 @@ export const Route = createFileRoute('/$')({
     if (!post) throw new Error('Post not found');
     return post;
   },
-  head: ({ params }) => ({
-    meta: [{ title: `${params._splat?.split('/').pop()} - Solid App` }],
+  head: ({ loaderData }) => ({
+    meta: [{ title: `${loaderData?.title} - ${SITE_NAME}` }],
   }),
   component: PostPage,
 });

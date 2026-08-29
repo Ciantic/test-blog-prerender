@@ -8,7 +8,7 @@ export const SITE_URL = 'https://ciantic.iki.fi';
 /** The name of the blog/site, shown in the navbar, `<title>`, and the feed. */
 export const SITE_NAME = 'Ciantic\'s Blog';
 
-export const SITE_TITLE = 'Ciantic\'s Blog';
+export const SITE_TITLE = 'Ciantic\'s Blog - Guides so old you don\'t need them, the usual.';
 
 /** Human-readable description, used in the RSS `<channel>`. */
 export const SITE_DESCRIPTION = 'Guides so old you don\'t need them, the usual.';

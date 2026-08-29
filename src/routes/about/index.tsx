@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/solid-router';
+import { SITE_NAME } from '../../site';
 
 function AboutPage() {
   return (
@@ -29,6 +30,6 @@ function AboutPage() {
 }
 
 export const Route = createFileRoute('/about/')({
-  head: () => ({ meta: [{ title: 'About - Solid App' }] }),
+  head: () => ({ meta: [{ title: `About - ${SITE_NAME}` }] }),
   component: AboutPage,
 });
