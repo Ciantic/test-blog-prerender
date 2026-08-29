@@ -15,6 +15,9 @@ function AboutPage() {
             </a>
           </li>
         </ul>
+        <h2>Technical details about this blog</h2>
+        <p>Uses SolidJS v2 and Tanstack Start with pre-rendering. I have <a href="https://github.com/Ciantic/test-blog-prerender" target="_blank">an example clean blog setup here</a>.</p>
+        <p>This blog should work without JavaScript enabled, HTML generated still has script tags, but they are mostly harmless bloat.</p>
       </div>
       <p class="mt-20">
         <Link to="/" class="btn btn-soft">
