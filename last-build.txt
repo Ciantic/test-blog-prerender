@@ -1,12 +1,26 @@
-dist/client/2026/img/test-image.png     0.17 kB
-dist/client/.vite/manifest.json         2.54 kB │ gzip:  0.60 kB
-dist/client/assets/App-CAxpScT5.css    70.14 kB │ gzip: 11.62 kB
-dist/client/assets/date-BNKy4HL5.js     0.11 kB │ gzip:  0.12 kB
-dist/client/assets/routes-C-AoxIy3.js   0.43 kB │ gzip:  0.30 kB
-dist/client/assets/_-DvOPVH_Z.js        0.55 kB │ gzip:  0.37 kB
-dist/client/assets/_-DQIZRRee.js        0.87 kB │ gzip:  0.52 kB
-dist/client/assets/about-C44XxUN2.js    1.29 kB │ gzip:  0.75 kB
-dist/client/assets/routes-CIBFxvIJ.js   1.99 kB │ gzip:  1.04 kB
-dist/client/assets/api-B5P6iiyh.js     47.85 kB │ gzip: 14.30 kB
-dist/client/assets/index-B9D_lr8C.js   67.58 kB │ gzip: 23.90 kB
-dist/client/assets/link-CQiba5Ec.js    88.52 kB │ gzip: 32.19 kB
+dist/client/.vite/manifest.json                                             2.53 kB │ gzip:  0.60 kB
+dist/client/2009/glass-only-fallback-in-windowsforms-01.png                 4.35 kB
+dist/client/2011/where-django-pydev-fails-01.png                           21.08 kB
+dist/client/2010/vlc-spdif-stuttering-fix-01.png                           38.60 kB
+dist/client/2015/in-memory-patching-explorerexe-to-06.png                  43.24 kB
+dist/client/2015/in-memory-patching-explorerexe-to-01.png                  46.18 kB
+dist/client/2015/in-memory-patching-explorerexe-to-03.png                  47.13 kB
+dist/client/2015/in-memory-patching-explorerexe-to-04.png                  47.22 kB
+dist/client/2015/in-memory-patching-explorerexe-to-02.png                  47.68 kB
+dist/client/2015/in-memory-patching-explorerexe-to-05.png                  49.30 kB
+dist/client/2011/windows-7-qos-policies-not-working-01.jpg                 52.25 kB
+dist/client/2011/windows-7-qos-policies-not-working-02.jpg                 64.69 kB
+dist/client/2010/add-your-program-to-default-programs-in-windows7-02.png  105.99 kB
+dist/client/2021/good-enough-02.jpg                                       108.18 kB
+dist/client/2010/add-your-program-to-default-programs-in-windows7-01.png  110.40 kB
+dist/client/2021/good-enough-01.jpg                                       182.31 kB
+dist/client/assets/App-DEixuWhH.css                                       100.31 kB │ gzip: 15.96 kB
+dist/client/assets/date-BNKy4HL5.js                                         0.11 kB │ gzip:  0.12 kB
+dist/client/assets/routes-DSbdoWOd.js                                       0.51 kB │ gzip:  0.34 kB
+dist/client/assets/_-DvOPVH_Z.js                                            0.55 kB │ gzip:  0.37 kB
+dist/client/assets/_-DQIZRRee.js                                            0.87 kB │ gzip:  0.52 kB
+dist/client/assets/about-C44XxUN2.js                                        1.29 kB │ gzip:  0.75 kB
+dist/client/assets/routes-D_ywdE0q.js                                       2.03 kB │ gzip:  1.05 kB
+dist/client/assets/api-B5P6iiyh.js                                         47.85 kB │ gzip: 14.30 kB
+dist/client/assets/index-BncITbMm.js                                       67.26 kB │ gzip: 23.82 kB
+dist/client/assets/link-CQiba5Ec.js                                        88.52 kB │ gzip: 32.19 kB
