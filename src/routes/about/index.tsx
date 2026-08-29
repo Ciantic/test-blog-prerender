@@ -3,8 +3,8 @@ import { Link, createFileRoute } from '@tanstack/solid-router';
 function AboutPage() {
   return (
     <main class="container mx-auto max-w-3xl px-4 py-12">
-      <h1 class="text-5xl font-bold tracking-tight">About</h1>
-      <div class="prose lg:prose-lg mt-8">
+      <div class="prose lg:prose-lg">
+        <h1>About</h1>
         <p>
           Software developer. I think I will figure out something here before merging with the machines.
         </p>

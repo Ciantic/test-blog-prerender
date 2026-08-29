@@ -7,7 +7,7 @@ function PostPage() {
   // Typed by the loader's return type; reactive to param changes.
   const post = Route.useLoaderData();
   return (
-    <main class="container mx-auto max-w-3xl px-4 py-10">
+    <main class="container mx-auto max-w-3xl px-4 py-12">
       <Show when={post().indexed}>
         <p class="text-sm text-base-content/50 mb-6">
           {formatDateFinnish(post().date)}
