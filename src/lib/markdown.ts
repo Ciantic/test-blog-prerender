@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { Marked, Renderer } from 'marked';
 import type { Token, Tokens } from 'marked';
 import markedAlert from 'marked-alert';
+import markedFootnote from 'marked-footnote';
 import { imageSize } from 'image-size';
 import { codeToHtml, ShikiError } from 'shiki';
 
@@ -40,6 +41,10 @@ function inlineText(tokens: Token[]): string {
   for (const token of tokens) {
     if (token.type === 'br') {
       out += ' ';
+    } else if (token.type === 'footnote_ref') {
+      // Drop footnote references ([^1]) from the excerpt text — the plain-text
+      // number would otherwise leak into the excerpt.
+      continue;
     } else {
       const anyToken = token as Token & { tokens?: Token[]; text?: string };
       if (anyToken.tokens) out += inlineText(anyToken.tokens);
@@ -157,7 +162,14 @@ export function renderMarkdown({
   // (Passing walkTokens as a parse option would override the extension's own
   // walkTokens instead of composing with it.) A per-render instance also keeps
   // concurrent renders (Promise.all across posts) from sharing mutable state.
-  const marked = new Marked(markedAlert(), { async: true, walkTokens });
+  // markedAlert() and markedFootnote() both register their own tokenizers +
+  // walkTokens; the Marked constructor composes them the same way marked-alert
+  // was already composed here. refMarkers wraps refs in [1] square brackets so
+  // we don't need extra CSS to draw them.
+  const marked = new Marked(markedAlert(), markedFootnote({ refMarkers: true }), {
+    async: true,
+    walkTokens,
+  });
   return marked.parse(markdown, {
     async: true,
     renderer: new PostImageRenderer(),
