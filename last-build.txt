@@ -9,7 +9,9 @@ dist/client/2015/in-memory-patching-explorerexe-to-04.png                  47.22
 dist/client/2015/in-memory-patching-explorerexe-to-02.png                  47.68 kB
 dist/client/2015/in-memory-patching-explorerexe-to-05.png                  49.30 kB
 dist/client/2011/windows-7-qos-policies-not-working-01.jpg                 52.25 kB
+dist/client/2010/windows-7-qos-policies-not-working-01.jpg                 52.97 kB
 dist/client/2011/windows-7-qos-policies-not-working-02.jpg                 64.69 kB
+dist/client/2010/windows-7-qos-policies-not-working-02.jpg                 65.18 kB
 dist/client/2010/add-your-program-to-default-programs-in-windows7-02.png  105.99 kB
 dist/client/2021/good-enough-02.jpg                                       108.18 kB
 dist/client/2010/add-your-program-to-default-programs-in-windows7-01.png  110.40 kB
