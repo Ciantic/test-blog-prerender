@@ -29,6 +29,7 @@
     "image-size": "^2.0.2",
     "jsdom": "^25.0.1",
     "marked-alert": "^2.1.2",
+    "marked-footnote": "^1.4.0",
     "mime-types": "^3.0.2",
     "shiki": "^4.4.3",
     "tailwindcss": "^4.3.3",

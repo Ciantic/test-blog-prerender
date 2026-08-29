@@ -78,6 +78,25 @@
 .markdown-alert .markdown-alert-title + * {
   margin-top: 0.5rem;
 }
+
+/* marked-footnote output (GFM `[^1]` footnotes, see markdown.ts). The
+   extension emits <section class="footnotes"> with an sr-only heading and an
+   <ol>. We keep it plain but tidy: separators for the backrefs and a top rule
+   so the list reads as a footnote block rather than run-on body text. */
+.prose .footnotes {
+  margin-top: 2em;
+  border-top: 1px solid light-dark(rgba(0, 0, 0, 0.215), rgba(255, 255, 255, 0.215));
+  padding-top: 0.75em;
+}
+.prose .footnotes ol {
+  font-size: 0.85em;
+  color: var(--color-base-content/70, inherit);
+}
+.prose .footnotes [data-footnote-backref] {
+  margin-left: 0.35em;
+  text-decoration: none;
+  color: inherit;
+}
 .markdown-alert .octicon {
   flex-shrink: 0;
   color: var(--alert-color);
