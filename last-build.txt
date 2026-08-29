@@ -18,9 +18,9 @@ dist/client/assets/App-DEixuWhH.css                                       100.31
 dist/client/assets/date-BNKy4HL5.js                                         0.11 kB │ gzip:  0.12 kB
 dist/client/assets/routes-DSbdoWOd.js                                       0.51 kB │ gzip:  0.34 kB
 dist/client/assets/_-DvOPVH_Z.js                                            0.55 kB │ gzip:  0.37 kB
+dist/client/assets/about-Cs5XvmHo.js                                        0.68 kB │ gzip:  0.47 kB
 dist/client/assets/_-DQIZRRee.js                                            0.87 kB │ gzip:  0.52 kB
-dist/client/assets/about-C44XxUN2.js                                        1.29 kB │ gzip:  0.75 kB
 dist/client/assets/routes-D_ywdE0q.js                                       2.03 kB │ gzip:  1.05 kB
 dist/client/assets/api-B5P6iiyh.js                                         47.85 kB │ gzip: 14.30 kB
-dist/client/assets/index-BncITbMm.js                                       67.26 kB │ gzip: 23.82 kB
+dist/client/assets/index-bhJOFbZM.js                                       67.26 kB │ gzip: 23.82 kB
 dist/client/assets/link-CQiba5Ec.js                                        88.52 kB │ gzip: 32.19 kB
