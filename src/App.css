@@ -39,6 +39,54 @@
   border: 1px solid light-dark(rgba(0, 0, 0, 0.215), rgba(255, 255, 255, 0.215));
 }
 
+/* marked-alert callouts (GitHub-style `> [!NOTE]` blocks). Reuse daisyUI's
+   alert component via @apply instead of hand-rolling the styling. daisyUI
+   has no alert-primary/neutral variant, so IMPORTANT reuses the base alert
+   with a custom primary accent. */
+.markdown-alert {
+  @apply alert alert-soft;
+  /* daisyUI's alert is a grid (icon + content). Markdown alerts are block
+     content (title + paragraphs), so fall back to a vertical block layout. */
+  display: block;
+  margin: 1em 0;
+}
+.markdown-alert-note {
+  @apply alert-info;
+}
+.markdown-alert-tip {
+  @apply alert-success;
+}
+.markdown-alert-warning {
+  @apply alert-warning;
+}
+.markdown-alert-caution {
+  @apply alert-error;
+}
+.markdown-alert-important {
+  --alert-color: var(--color-primary);
+  --alert-border-color: var(--color-primary);
+  color: var(--color-base-content);
+}
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--alert-color);
+  font-weight: 700;
+  margin-top: 0;
+}
+.markdown-alert .markdown-alert-title + * {
+  margin-top: 0.5rem;
+}
+.markdown-alert .octicon {
+  flex-shrink: 0;
+  color: var(--alert-color);
+  /* marked-alert emits raw octicon SVG paths without a fill and without
+     GitHub's `.octicon { fill: currentColor }` CSS, so the browser default
+     (black) wins unless we opt into currentColor explicitly. */
+  fill: currentColor;
+}
+
 @plugin 'daisyui' {
   themes: bumblebee --default, sunset --prefersdark;
 }

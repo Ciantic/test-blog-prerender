@@ -1,8 +1,9 @@
 
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { marked, Renderer } from 'marked';
+import { Marked, Renderer } from 'marked';
 import type { Token, Tokens } from 'marked';
+import markedAlert from 'marked-alert';
 import { imageSize } from 'image-size';
 import { codeToHtml, ShikiError } from 'shiki';
 
@@ -150,9 +151,15 @@ export function renderMarkdown({
       }
     }
   };
+  // A fresh Marked instance per render: its walkTokens closes over this
+  // render's postDir/excerpt/hasHeading, and the constructor's `use()` chains
+  // it with marked-alert's walkTokens so alerts ([!NOTE] etc.) are detected.
+  // (Passing walkTokens as a parse option would override the extension's own
+  // walkTokens instead of composing with it.) A per-render instance also keeps
+  // concurrent renders (Promise.all across posts) from sharing mutable state.
+  const marked = new Marked(markedAlert(), { async: true, walkTokens });
   return marked.parse(markdown, {
     async: true,
-    walkTokens,
     renderer: new PostImageRenderer(),
   }).then((html) => {
     // Some old posts carry their title only in frontmatter, not as a heading
