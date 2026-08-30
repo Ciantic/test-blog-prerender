@@ -19,16 +19,23 @@ import {
 const execFileAsync = promisify(execFile);
 
 
-const POSTS_DIR = import.meta.env.VITE_POSTS_DIR;
+/**
+ * Posts dir used by the app-facing entry points. Resolved lazily so this
+ * module can also be bundled into vite.config.ts, where `import.meta.env`
+ * isn't defined (the VITE_POSTS_DIR define only applies to app code, not the
+ * config bundle). Config-time callers (postAssetsPlugin) always pass an
+ * explicit postsDir, so this getter never runs there.
+ */
+const getPostsDir = (): string => import.meta.env.VITE_POSTS_DIR as string;
 
 
 // Expensive work (git date + markdown render) cached to Vite's cache dir and
 // invalidated when the post file's mtime/size change. See vite-cache-plugin.ts.
-async function computePostMeta(absPath: string): Promise<PostMeta | null> {
-  return memoizeFile(absPath, absPath, () => computePostMetaUncached(absPath));
+async function computePostMeta(absPath: string, postsDir: string): Promise<PostMeta | null> {
+  return memoizeFile(absPath, absPath, () => computePostMetaUncached(absPath, postsDir));
 }
 
-async function computePostMetaUncached(absPath: string): Promise<PostMeta | null> {
+async function computePostMetaUncached(absPath: string, postsDir: string): Promise<PostMeta | null> {
   try {
     const { stdout } = await execFileAsync(
       'git',
@@ -60,12 +67,15 @@ async function computePostMetaUncached(absPath: string): Promise<PostMeta | null
       return undefined;
     };
     // Path relative to the posts dir, used for the URL slug and the `path` field.
-    const file = absPath.slice(POSTS_DIR.length + 1).replaceAll('\\', '/');
+    const file = absPath.slice(postsDir.length + 1).replaceAll('\\', '/');
     const urlPath = file.replace(/\.md$/, '');
     // Render the body (frontmatter stripped) to HTML here, so app code
     // never needs marked either. The excerpt fallback (first paragraph as
     // plain text) is derived from the token tree at the same time.
-    const { html, excerpt } = await renderMarkdown({ markdown: content, absPath, title: pick('title') });
+    // assets/links are the local files and URLs the post references, collected
+    // by the markdown pipeline. The build uses `assets` to emit only the files
+    // a post actually needs (see vite-post-assets-plugin.ts).
+    const { html, excerpt, assets, links } = await renderMarkdown({ markdown: content, absPath, title: pick('title') });
     // Effective title/excerpt resolved here too: frontmatter wins, then
     // the markdown heading / first paragraph, then the slug.
     const title = pick('title') ?? content.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? "Unknown title";
@@ -93,31 +103,35 @@ async function computePostMetaUncached(absPath: string): Promise<PostMeta | null
       title,
       excerpt: pick('excerpt') ?? excerpt,
       html,
+      assets,
+      links,
     };
   } catch {
     return null; // Not a git repo or git unavailable — skip.
   }
 }
 
-async function getPostMetas(): Promise<PostMeta[]> {
-  const files = getPostFiles(POSTS_DIR).filter((f) => f.endsWith('.md'));
-  const results = await Promise.all(files.map((f) => computePostMeta(f)));
+export async function getPostMetas(postsDir: string = getPostsDir()): Promise<PostMeta[]> {
+  const files = getPostFiles(postsDir).filter((f) => f.endsWith('.md'));
+  const results = await Promise.all(files.map((f) => computePostMeta(f, postsDir)));
   return results.filter((m) => m !== null);
 }
 
 
-export async function getPostData(urlPath: string): Promise<PostMeta | undefined> {
-  const absPath = join(POSTS_DIR, `${urlPath}.md`);
-  if (!getPostFiles(POSTS_DIR).includes(absPath)) return undefined;
-  return (await computePostMeta(absPath)) ?? undefined;
+export async function getPostData(urlPath: string, postsDir: string = getPostsDir()): Promise<PostMeta | undefined> {
+  const absPath = join(postsDir, `${urlPath}.md`);
+  if (!getPostFiles(postsDir).includes(absPath)) return undefined;
+  return (await computePostMeta(absPath, postsDir)) ?? undefined;
 }
 
 
-export async function getPostIndexData(): Promise<PostMetaIndex[]> {
-  return (await getPostMetas())
+export async function getPostIndexData(postsDir: string = getPostsDir()): Promise<PostMetaIndex[]> {
+  return (await getPostMetas(postsDir))
     .filter((meta) => meta.indexed)
     .sort((a, b) => b.date.localeCompare(a.date))
-    .map(({ html: _html, ...index }) => index);
+    // assets/links are build-only concerns (asset emission); keep them out of
+    // the lean index/RSS shape, same as the rendered html.
+    .map(({ html: _html, assets: _assets, links: _links, ...index }) => index);
 }
 
 // Builds the RSS feed (raw XML string) from the committed, indexed posts.

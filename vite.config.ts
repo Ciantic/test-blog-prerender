@@ -2,78 +2,75 @@ import { tanstackStart } from '@tanstack/solid-start/plugin/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import solid from 'vite-plugin-solid';
-import { join } from 'node:path';
-import { getPostFiles } from './src/lib/common';
-import { viteCachePlugin } from './src/lib/vite-cache-plugin';
+import { dirname, join, normalize } from 'node:path';
+import { getPostMetas } from './src/lib/blog';
+import { ensureCacheEngine, viteCachePlugin } from './src/lib/vite-cache-plugin';
 import { postAssetsPlugin } from './src/lib/vite-post-assets-plugin';
 
 const POSTS_DIR = join(import.meta.dirname, 'posts');
-const POSTS_FILES = getPostFiles(POSTS_DIR);
-// Vite's cache directory. Set explicitly so it can be exposed to app code
-// (import.meta.env.VITE_CACHE_DIR) and the blog memoizer writes into the
-// same directory Vite does.
 const CACHE_DIR = join(import.meta.dirname, 'node_modules/.vite');
-// getPostFiles returns absolute paths; some consumers need the path relative
-// to the posts dir (prerender URLs, emitted asset names).
-const relative = (p: string) => p.slice(POSTS_DIR.length + 1);
 
-export default defineConfig({
-  cacheDir: CACHE_DIR,
-  define: {
-    'import.meta.env.VITE_POSTS_DIR': JSON.stringify(POSTS_DIR),
-  },
-  // TanStack Start owns the entries, dev serving, and the build. It scans
-  // src/routes and generates src/routeTree.gen.ts, and prerenders the app to
-  // static HTML at build time.
-  plugins: [
-    viteCachePlugin(CACHE_DIR),
-    postAssetsPlugin(POSTS_DIR, POSTS_FILES),
-    tanstackStart({
-      prerender: {
-        // Enable prerendering.
-        enabled: true,
-        // Emit pages at /page/index.html instead of /page.html.
-        autoSubfolderIndex: true,
-        // Discover static routes automatically and merge with `pages`.
-        autoStaticPathsDiscovery: true,
-        // Extract links from prerendered HTML and prerender those too.
-        crawlLinks: true,
-      },
-      // Explicitly prerender every committed post at /<urlPath>/, including
-      // unlisted ones. Paths mirror the posts/ directory structure. Derived
-      // straight from the posts/ file listing — posts without a git commit
-      // are still attempted but will 404 during prerendering, same as
-      // before (getPostMetas skips them, so this is a superset).
-      pages: [
-        // The RSS feed is a server route (src/routes/rss.xml.ts) with no
-        // component, so autoStaticPathsDiscovery skips it. Prerender it here
-        // so dist/client/rss.xml is emitted as raw XML.
-        { path: '/rss.xml' },
-        ...POSTS_FILES
-          .filter((f) => f.endsWith('.md'))
-          .map((f) => ({ path: `/${relative(f).replace(/\.md$/, '')}/` })),
-      ],
-    }),
-    // vite-plugin-solid in SSR mode — the supported Solid plugin for
-    // TanStack Start. It injects the client entry and handles the SSR
-    // transforms that tanstackStart's server entry relies on.
-    solid({ ssr: true }),
-    tailwindcss(),
-  ],
-  server: {
-    port: 3000,
-  },
-  test: {
-    environment: 'jsdom',
-    globals: false,
-    setupFiles: ['./vitest-setup.ts'],
-    // if you have few tests, try commenting this
-    // out to improve performance:
-    isolate: false,
-  },
-  build: {
-    target: 'esnext',
-    // Keep images as asset files instead of inlining them into the JS bundle.
-    assetsInlineLimit: 0,
-  },
+export default defineConfig(async () => {
+  ensureCacheEngine(CACHE_DIR);
+  const metas = await getPostMetas(POSTS_DIR);
+  const assetPaths = metas.flatMap((meta) =>
+    meta.assets.map((asset) => normalize(join(dirname(meta.path), asset))),
+  );
+
+  return {
+    cacheDir: CACHE_DIR,
+    define: {
+      'import.meta.env.VITE_POSTS_DIR': JSON.stringify(POSTS_DIR),
+    },
+    // TanStack Start owns the entries, dev serving, and the build. It scans
+    // src/routes and generates src/routeTree.gen.ts, and prerenders the app to
+    // static HTML at build time.
+    plugins: [
+      viteCachePlugin(CACHE_DIR),
+      postAssetsPlugin(POSTS_DIR, assetPaths),
+      tanstackStart({
+        prerender: {
+          // Enable prerendering.
+          enabled: true,
+          // Emit pages at /page/index.html instead of /page.html.
+          autoSubfolderIndex: true,
+          // Discover static routes automatically and merge with `pages`.
+          autoStaticPathsDiscovery: true,
+          // Extract links from prerendered HTML and prerender those too.
+          crawlLinks: true,
+        },
+        // Prerender each committed post at /<urlPath>/, including unlisted
+        // ones. Derived from getPostMetas, the same source that drives asset
+        // emission — a post without a git commit is skipped by both.
+        pages: [
+          // The RSS feed is a server route (src/routes/rss.xml.ts) with no
+          // component, so autoStaticPathsDiscovery skips it. Prerender it here
+          // so dist/client/rss.xml is emitted as raw XML.
+          { path: '/rss.xml' },
+          ...metas.map((meta) => ({ path: `/${meta.urlPath}/` })),
+        ],
+      }),
+      // vite-plugin-solid in SSR mode — the supported Solid plugin for
+      // TanStack Start. It injects the client entry and handles the SSR
+      // transforms that tanstackStart's server entry relies on.
+      solid({ ssr: true }),
+      tailwindcss(),
+    ],
+    server: {
+      port: 3000,
+    },
+    test: {
+      environment: 'jsdom',
+      globals: false,
+      setupFiles: ['./vitest-setup.ts'],
+      // if you have few tests, try commenting this
+      // out to improve performance:
+      isolate: false,
+    },
+    build: {
+      target: 'esnext',
+      // Keep images as asset files instead of inlining them into the JS bundle.
+      assetsInlineLimit: 0,
+    },
+  };
 });

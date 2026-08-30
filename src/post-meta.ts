@@ -37,4 +37,12 @@ export interface PostMetaIndex {
 export interface PostMeta extends PostMetaIndex {
   /** Markdown body rendered to HTML at build time (frontmatter stripped). */
   html: string;
+  /**
+   * Local files the post references (image srcs / link hrefs), relative to
+   * the post's own directory (e.g. "img/a.png"). Collected by the markdown
+   * pipeline and used by the build to emit only referenced assets.
+   */
+  assets: string[];
+  /** URLs the post references: external links, absolute paths, `.md` post links. */
+  links: string[];
 }

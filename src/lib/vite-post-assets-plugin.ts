@@ -3,17 +3,15 @@ import { join } from 'node:path';
 import { lookup as mimeTypeOf } from 'mime-types';
 import type { Plugin } from 'vite';
 
-// getPostFiles returns absolute paths; some consumers need the path relative
-// to the posts dir (prerender URLs, emitted asset names).
-const rel = (postsDir: string, p: string) => p.slice(postsDir.length + 1);
-
 /**
- * Vite plugin that makes non-markdown post assets (images, etc.) available.
- * In dev it serves them from the posts/ dir via a middleware (so they load
- * under their posts-relative URLs); in the build it emits them as static
- * assets so they're deployable alongside the prerendered pages.
+ * Vite plugin that makes post assets (images, etc.) available. In dev it
+ * serves exactly the assets passed in (posts-relative paths resolved from
+ * each post's markdown refs by the caller) via a middleware, so they load
+ * under their posts-relative URLs; in the build it emits the same set as
+ * static files. Unreferenced files in posts/ are never served or bundled.
  */
-export function postAssetsPlugin(postsDir: string, postFiles: string[]): Plugin {
+export function postAssetsPlugin(postsDir: string, assetPaths: string[]): Plugin {
+  const assetSet = new Set(assetPaths);
   return {
     name: 'post-assets-server',
     configureServer(server) {
@@ -25,7 +23,8 @@ export function postAssetsPlugin(postsDir: string, postFiles: string[]): Plugin 
           return next();
         }
         const relPath = decodeURIComponent(url.replace(/^\//, ''));
-        if (!relPath || relPath.includes('..')) return next();
+        // Serve only referenced assets — the same allow-list the build emits.
+        if (!assetSet.has(relPath)) return next();
         try {
           const data = readFileSync(join(postsDir, relPath));
           res.setHeader('Content-Type', mimeTypeOf(relPath) || 'application/octet-stream');
@@ -39,13 +38,11 @@ export function postAssetsPlugin(postsDir: string, postFiles: string[]): Plugin 
     generateBundle() {
       // Only the client build produces deployable static assets.
       if (this.environment.name !== 'client') return;
-      // Ignore markdown (handled as pages) and hidden files (dotfiles/dirs).
-      const isHidden = (f: string) => f.split(/[\\/]/).some((seg) => seg.startsWith('.'));
-      for (const absPath of postFiles.filter((f) => !f.endsWith('.md') && !isHidden(f))) {
+      for (const fileName of assetPaths) {
         this.emitFile({
           type: 'asset',
-          fileName: rel(postsDir, absPath),
-          source: readFileSync(absPath),
+          fileName,
+          source: readFileSync(join(postsDir, fileName)),
         });
       }
     },

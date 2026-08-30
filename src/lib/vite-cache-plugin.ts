@@ -98,6 +98,62 @@ function makeEngine(cacheDir: string, logger: Logger, withTimestamp: boolean): C
   };
 }
 
+// A minimal logger for the config-time pass in ensureCacheEngine, used before
+// Vite's real logger exists (the config factory runs before configResolved).
+// Mirrors Vite's `[vite]` prefix + optional timestamp so early HIT/MISS lines
+// look consistent with the plugin's. configResolved later swaps in the real
+// logger, so this only ever shows the config-time getPostMetas pass.
+const fallbackLogger: Logger = {
+  info: (msg, options) => {
+    const ts = options?.timestamp ? `${new Date().toLocaleTimeString()} ` : '';
+    console.log(`[vite]${ts}${msg}`);
+  },
+  warn: (msg) => console.warn(`[vite] ${msg}`),
+  warnOnce: (msg) => console.warn(`[vite] ${msg}`),
+  error: (msg) => console.error(`[vite] ${msg}`),
+  clearScreen: () => {},
+  hasErrorLogged: () => false,
+  hasWarned: false,
+};
+
+// Installs the cache engine on globalThis (where the SSR app's memoizeFile
+// finds it), honoring the clear-once and announce-once flags. Called from the
+// plugin's configResolved (with Vite's real logger) and from the config
+// factory via ensureCacheEngine (with the fallback logger). The two are safe
+// to both run: the announce/clear flags prevent duplicate side effects, and
+// the engine is just overwritten with the real-logger one at configResolved.
+function installEngine(
+  cacheDir: string,
+  logger: Logger,
+  withTimestamp: boolean,
+  forced: boolean,
+): void {
+  const global = globalThis as Record<PropertyKey, unknown>;
+  const log = (msg: string) => logger.info(msg, { timestamp: withTimestamp });
+  if (forced && !global[CLEARED_KEY]) {
+    global[CLEARED_KEY] = true;
+    const reason = process.argv.includes('--force') ? '--force' : 'CLEAR_CACHE';
+    void clearFileCache(cacheDir, reason, log);
+  }
+  global[BRIDGE_KEY] = makeEngine(cacheDir, logger, withTimestamp);
+  if (!global[ANNOUNCED_KEY]) {
+    global[ANNOUNCED_KEY] = true;
+    log(`${cyan('[vite-caching]')} cache dir: ${displayPath(cacheDir)} (clear: vite --force or CLEAR_CACHE=1)`);
+  }
+}
+
+/**
+ * Make sure the cache engine is installed before expensive work starts.
+ * vite.config.ts calls this before getPostMetas, because the config factory
+ * runs before the plugin's configResolved hook. Uses the fallback logger
+ * until configResolved swaps in Vite's real one.
+ */
+export function ensureCacheEngine(cacheDir: string): void {
+  const isDev = !process.argv.includes('build');
+  const forced = process.argv.includes('--force') || !!process.env.CLEAR_CACHE;
+  installEngine(cacheDir, fallbackLogger, isDev, forced);
+}
+
 /**
  * Vite plugin that owns the blog file cache. Installs a CacheEngine (with
  * Vite's native `logger`, so HIT/MISS lines match Vite's color + timestamp
@@ -117,24 +173,11 @@ export function viteCachePlugin(cacheDir: string): Plugin {
       // step runs a `serve`-command server *during* the build, so command
       // alone can't tell dev apart from build.
       const isDev = !process.argv.includes('build');
-      const log = (msg: string) => config.logger.info(msg, { timestamp: isDev });
-
-      const forced = config.optimizeDeps.force || process.env.CLEAR_CACHE;
-      const global = globalThis as Record<PropertyKey, unknown>;
-      if (forced && !global[CLEARED_KEY]) {
-        global[CLEARED_KEY] = true;
-        const reason = config.optimizeDeps.force ? '--force' : 'CLEAR_CACHE';
-        void clearFileCache(cacheDir, reason, log);
-      }
-
-      const engine = makeEngine(cacheDir, config.logger, isDev);
-      global[BRIDGE_KEY] = engine;
-      // Point the user at the cache location up front, before any HIT/MISS
-      // lines follow. Use displayPath so it's relative when under cwd.
-      if (!global[ANNOUNCED_KEY]) {
-        global[ANNOUNCED_KEY] = true;
-        log(`${cyan('[vite-caching]')} cache dir: ${displayPath(cacheDir)} (clear: vite --force or CLEAR_CACHE=1)`);
-      }
+      const forced = !!config.optimizeDeps.force || !!process.env.CLEAR_CACHE;
+      // Re-install the engine now that Vite's real logger exists. If the
+      // config factory already ran ensureCacheEngine, this just swaps in the
+      // real-logger engine (announce/clear flags prevent duplicate output).
+      installEngine(cacheDir, config.logger, isDev, forced);
     },
   };
 }
