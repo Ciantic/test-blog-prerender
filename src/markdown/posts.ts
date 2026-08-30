@@ -6,8 +6,7 @@ import matter from 'gray-matter';
 import { readFile, readdir } from 'node:fs/promises';
 import { dirname, basename, join } from 'node:path';
 import { renderMarkdown } from './render';
-import { createFileCache } from './cache';
-import type { FileCache } from './cache';
+import { memoize } from './cache';
 import {
   SITE_URL,
   SITE_NAME,
@@ -18,25 +17,6 @@ import {
 
 const execFileAsync = promisify(execFile);
 
-/** Options for {@link createPosts}. */
-export interface PostsOptions {
-  /** Absolute path to the directory of markdown files, scanned recursively. */
-  postsDir: string;
-  /** Memoization engine for the expensive per-file meta computation. */
-  cache: FileCache;
-}
-
-export interface Posts {
-  /** All committed posts (listed and unlisted), unsorted. */
-  getPostMetas(): Promise<PostMeta[]>;
-  /** A single post by its URL path, or undefined if it doesn't exist. */
-  getPostData(urlPath: string): Promise<PostMeta | undefined>;
-  /** Lean, date-sorted index of listed posts (no html/assets/links). */
-  getPostIndexData(): Promise<PostMetaIndex[]>;
-  /** RSS feed (raw XML) built from the listed posts. */
-  getRssXmlData(): Promise<string>;
-}
-
 /** All files under a posts/ dir recursively, as absolute paths. */
 async function getPostFiles(postsDir: string): Promise<string[]> {
   return (await readdir(postsDir, { recursive: true, encoding: 'utf-8', withFileTypes: true }))
@@ -44,16 +24,18 @@ async function getPostFiles(postsDir: string): Promise<string[]> {
     .map((d) => join(d.parentPath, d.name));
 }
 
-export function createPosts(options: PostsOptions): Posts {
-  const { postsDir, cache } = options;
+// Expensive work (git date + markdown render) cached to the cache dir and
+// invalidated when the post file's mtime/size change. See cache.ts.
+async function computePostMeta(
+  { absPath, postsDir }: { absPath: string; postsDir: string },
+): Promise<PostMeta | null> {
+  return memoize({ key: absPath + postsDir, sourcePath: absPath, build: () => computePostMetaUncached(absPath, postsDir) });
+}
 
-  // Expensive work (git date + markdown render) cached to the cache dir and
-  // invalidated when the post file's mtime/size change. See cache.ts.
-  async function computePostMeta(absPath: string): Promise<PostMeta | null> {
-    return cache.memoize(absPath, absPath, () => computePostMetaUncached(absPath));
-  }
-
-  async function computePostMetaUncached(absPath: string): Promise<PostMeta | null> {
+async function computePostMetaUncached(
+  absPath: string,
+  postsDir: string,
+): Promise<PostMeta | null> {
     try {
       const { stdout } = await execFileAsync(
         'git',
@@ -125,96 +107,81 @@ export function createPosts(options: PostsOptions): Posts {
         links,
       };
     } catch {
-      return null; // Not a git repo or git unavailable — skip.
-    }
+    return null; // Not a git repo or git unavailable — skip.
+  }
+}
+
+/** All committed posts (listed and unlisted), unsorted. */
+export async function getPostMetas(options: { postsDir: string }): Promise<PostMeta[]> {
+  if (!options.postsDir) {
+    throw new Error('getPostMetas() requires postsDir in options');
+  }
+  const files = (await getPostFiles(options.postsDir)).filter((f) => f.endsWith('.md'));
+  const results = await Promise.all(files.map((f) => computePostMeta({
+    absPath: f, postsDir: options.postsDir })));
+  return results.filter((m) => m !== null);
+}
+
+/** A single post by its URL path, or undefined if it doesn't exist. */
+export async function getPostData(
+  options: { postsDir: string; urlPath: string },
+): Promise<PostMeta | undefined> {
+  if (!options.postsDir) {
+    throw new Error('getPostData() requires postsDir in options');
   }
 
-  return {
-    async getPostMetas(): Promise<PostMeta[]> {
-      const files = (await getPostFiles(postsDir)).filter((f) => f.endsWith('.md'));
-      const results = await Promise.all(files.map((f) => computePostMeta(f)));
-      return results.filter((m) => m !== null);
-    },
-
-    async getPostData(urlPath: string): Promise<PostMeta | undefined> {
-      const absPath = join(postsDir, `${urlPath}.md`);
-      if (!(await getPostFiles(postsDir)).includes(absPath)) return undefined;
-      return (await computePostMeta(absPath)) ?? undefined;
-    },
-
-    async getPostIndexData(): Promise<PostMetaIndex[]> {
-      return (await this.getPostMetas())
-        .filter((meta) => meta.indexed)
-        .sort((a, b) => b.date.localeCompare(a.date))
-        // assets/links are build-only concerns (asset emission); keep them out of
-        // the lean index/RSS shape, same as the rendered html.
-        .map(({ html: _html, assets: _assets, links: _links, ...index }) => index);
-    },
-
-    // Builds the RSS feed (raw XML string) from the committed, indexed posts.
-    // Runs server-side only; the route that serves /rss.xml wraps this in a
-    // Response. api.ts's getRssXml server fn just calls this.
-    async getRssXmlData(): Promise<string> {
-      const feed = new Feed({
-        title: SITE_NAME,
-        description: SITE_DESCRIPTION,
-        id: `${SITE_URL}/`,
-        link: `${SITE_URL}/`,
-        language: SITE_LANGUAGE,
-        copyright: SITE_COPYRIGHT,
-      });
-
-      // Newest first, by the effective date (frontmatter overrides git date).
-      // Only indexed posts appear in the feed — exactly what getPostIndexData()
-      // returns (title already resolved: frontmatter > `# Heading` > slug).
-      const items = (await this.getPostIndexData()).map((meta) => ({
-        url: `${SITE_URL}/${meta.urlPath}/`,
-        title: meta.title,
-        date: new Date(meta.date),
-      }));
-
-      for (const { url, title, date } of items) {
-        feed.addItem({
-          title,
-          id: url,
-          link: url,
-          date,
-        });
-      }
-
-      return feed.rss2();
-    },
-  };
+  const absPath = join(options.postsDir, `${options.urlPath}.md`);
+  if (!(await getPostFiles(options.postsDir)).includes(absPath)) return undefined;
+  return (await computePostMeta({ absPath, postsDir: options.postsDir })) ?? undefined;
 }
 
-/**
- * Default instance for app code (server functions in api.ts). The posts dir
- * comes from the Vite define of VITE_POSTS_DIR; the cache points at the same
- * node_modules/.vite dir the build-side instance uses, so both share entries.
- * vite.config.ts constructs its own instance instead (it needs the metas
- * before the app bundles exist).
- */
-let defaultPosts: Posts | undefined;
-function getDefaultPosts(): Posts {
-  defaultPosts ??= createPosts({
-    postsDir: import.meta.env.VITE_POSTS_DIR as string,
-    cache: createFileCache({ cacheDir: join(import.meta.dirname, '../../node_modules/.vite') }),
+/** Lean, date-sorted index of listed posts (no html/assets/links). */
+export async function getPostIndexData(options: { postsDir: string }): Promise<PostMetaIndex[]> {
+  if (!options.postsDir) {
+    throw new Error('getPostIndexData() requires postsDir in options');
+  }
+
+  return (await getPostMetas(options))
+    .filter((meta) => meta.indexed)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    // assets/links are build-only concerns (asset emission); keep them out of
+    // the lean index/RSS shape, same as the rendered html.
+    .map(({ html: _html, assets: _assets, links: _links, ...index }) => index);
+}
+
+// Builds the RSS feed (raw XML string) from the committed, indexed posts.
+// Runs server-side only; the route that serves /rss.xml wraps this in a
+// Response. api.ts's getRssXml server fn just calls this.
+export async function getRssXmlData(options: { postsDir: string }): Promise<string> {
+  if (!options.postsDir) {
+    throw new Error('getRssXmlData() requires postsDir in options');
+  }
+  const feed = new Feed({
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    id: `${SITE_URL}/`,
+    link: `${SITE_URL}/`,
+    language: SITE_LANGUAGE,
+    copyright: SITE_COPYRIGHT,
   });
-  return defaultPosts;
-}
 
-export function getPostMetas(): Promise<PostMeta[]> {
-  return getDefaultPosts().getPostMetas();
-}
+  // Newest first, by the effective date (frontmatter overrides git date).
+  // Only indexed posts appear in the feed — exactly what getPostIndexData()
+  // returns (title already resolved: frontmatter > `# Heading` > slug).
+  const items = (await getPostIndexData(options)).map((meta) => ({
+    url: `${SITE_URL}/${meta.urlPath}/`,
+    title: meta.title,
+    date: new Date(meta.date),
+  }));
 
-export function getPostData(urlPath: string): Promise<PostMeta | undefined> {
-  return getDefaultPosts().getPostData(urlPath);
-}
+  for (const { url, title, date } of items) {
+    feed.addItem({
+      title,
+      id: url,
+      link: url,
+      date,
+    });
+  }
 
-export function getPostIndexData(): Promise<PostMetaIndex[]> {
-  return getDefaultPosts().getPostIndexData();
-}
-
-export function getRssXmlData(): Promise<string> {
-  return getDefaultPosts().getRssXmlData();
+  return feed.rss2();
 }

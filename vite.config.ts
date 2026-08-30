@@ -3,23 +3,16 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import solid from 'vite-plugin-solid';
 import { dirname, join, normalize } from 'node:path';
-import { createFileCache } from './src/markdown/cache';
-import { createPosts } from './src/markdown/posts';
+import { initFileCache } from './src/markdown/cache';
+import { getPostMetas } from './src/markdown/posts';
 import { postAssetsPlugin } from './src/lib/vite-post-assets-plugin';
 
 const POSTS_DIR = join(import.meta.dirname, 'posts');
 const CACHE_DIR = join(import.meta.dirname, 'node_modules/.vite');
 
 export default defineConfig(async () => {
-  // Content-agnostic memoization for the per-post meta computation. Vite's
-  // logger is injected so HIT/MISS lines match the surrounding Vite output.
-  // `--force` / CLEAR_CACHE clear it (handled inside createFileCache).
-  const cache = createFileCache({
-    cacheDir: CACHE_DIR,
-    log: (msg) => console.log(`[vite] ${msg}`),
-  });
-  const posts = createPosts({ postsDir: POSTS_DIR, cache });
-  const metas = await posts.getPostMetas();
+  await initFileCache({ cacheDir: CACHE_DIR });
+  const metas = await getPostMetas({ postsDir: POSTS_DIR });
   const assetPaths = metas.flatMap((meta) =>
     meta.assets.map((asset) => normalize(join(dirname(meta.path), asset))),
   );
@@ -28,6 +21,10 @@ export default defineConfig(async () => {
     cacheDir: CACHE_DIR,
     define: {
       'import.meta.env.VITE_POSTS_DIR': JSON.stringify(POSTS_DIR),
+      // Injected so the SSR/prerender bundle's default posts instance uses the
+      // same cache dir as this config-side instance. Resolving it from
+      // import.meta.dirname inside the bundle would land in dist/ instead.
+      'import.meta.env.VITE_CACHE_DIR': JSON.stringify(CACHE_DIR),
     },
     // TanStack Start owns the entries, dev serving, and the build. It scans
     // src/routes and generates src/routeTree.gen.ts, and prerenders the app to
