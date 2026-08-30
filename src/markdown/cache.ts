@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile, readdir, unlink } from 'node:fs/promises';
 import { join, relative, isAbsolute } from 'node:path';
 import pc from 'picocolors';
+import { stringify as devalueStringify, parse as devalueParse } from 'devalue';
 
 const cyan = pc.cyan;
 
@@ -93,7 +94,7 @@ export async function memoize<T>({
       const raw = await readFile(file, 'utf-8').catch(() => null);
       if (raw) {
         try {
-          const entry = JSON.parse(raw) as { stamp: string; value: T };
+          const entry = devalueParse(raw) as { stamp: string; value: T };
           if (entry.stamp === current) {
             log(`HIT ${displayPath(tag)}`);
             return entry.value;
@@ -108,7 +109,9 @@ export async function memoize<T>({
     const value = await build();
     if (value !== null && current !== null) {
       await mkdir(cacheDir!, { recursive: true }).catch(() => {});
-      await writeFile(file, JSON.stringify({ stamp: current, value })).catch(() => {});
+      // devalue (not JSON.stringify) so Date values round-trip: JSON would
+      // flatten them to ISO strings, losing the Date type on cache reads.
+      await writeFile(file, devalueStringify({ stamp: current, value })).catch(() => {});
     }
     return value;
   })();

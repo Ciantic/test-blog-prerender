@@ -41,60 +41,68 @@ async function computePostMeta(
   });
 }
 
+async function getGitCommitDate(absPath: string): Promise<Date | null> {
+  const { stdout } = await execFileAsync(
+    'git',
+    [
+      'log',
+      // Only the commit that added the file — its creation date, so
+      // later edits don't change the post's date metadata.
+      '--diff-filter=A',
+      '--format=%ad',
+      // ISO 8601 with time part — parseable by new Date() in posts.ts.
+      '--date=format:%Y-%m-%dT%H:%M:%S%z',
+      '--',
+      basename(absPath),
+    ],
+    { cwd: dirname(absPath), encoding: 'utf-8' },
+  );
+  const out = stdout.trim();
+  if (!out) return null; // No commit for this file yet — skip it.
+  return new Date(out);
+}
+
+async function getModifiedDate(absPath: string): Promise<Date | null> {
+  const st = await stat(absPath).catch(() => null);
+  return st ? new Date(st.mtimeMs) : null;
+}
+
 async function computePostMetaUncached(
   absPath: string,
   postsDir: string,
 ): Promise<PostMeta | null> {
     try {
-      const { stdout } = await execFileAsync(
-        'git',
-        [
-          'log',
-          // Only the commit that added the file — its creation date, so
-          // later edits don't change the post's date metadata.
-          '--diff-filter=A',
-          '--format=%ad',
-          // ISO 8601 with time part — parseable by new Date() in posts.ts.
-          '--date=format:%Y-%m-%dT%H:%M:%S%z',
-          '--',
-          basename(absPath),
-        ],
-        { cwd: dirname(absPath), encoding: 'utf-8' },
-      );
-      const out = stdout.trim();
-      if (!out) return null; // No commit for this file yet — skip it.
-      const date = out.split('\n')[0];
-      const { data, content } = matter(await readFile(absPath, 'utf-8'));
-      const pick = (key: string): string | undefined => {
-        const value = data[key];
-        if (typeof value === 'string') return value;
-        if (value instanceof Date) return value.toISOString();
-        if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-        return undefined;
-      };
       const file = absPath.slice(postsDir.length + 1).replaceAll('\\', '/');
       const urlPath = file.replace(/\.md$/, '');
-      const { html, excerpt, assets, links } = await renderMarkdown({ markdown: content, absPath, title: pick('title') });
-      const title = pick('title') ?? content.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? "Unknown title";
-      const fmDate = data.date instanceof Date ? data.date : undefined;
-      const parsed = fmDate ?? new Date(pick('date') ?? date);
-      if (Number.isNaN(parsed.getTime())) {
-        throw new Error(`Post ${file} has an unparseable date`);
+      const { data: frontmatter, content: markdown } = matter(await readFile(absPath, 'utf-8'));
+      const title = typeof frontmatter.title === 'string' ? frontmatter.title : markdown.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? "Unknown title";
+      let date: Date | undefined;
+      if (frontmatter.date) {
+        if (frontmatter.date instanceof Date) {
+          date = frontmatter.date;
+        } else {
+          date = new Date(frontmatter.date);
+          if (Number.isNaN(date.getTime())) {
+            throw new Error(`Post ${file} has an unparseable frontmatter date`);
+          }
+        }
+      } else {
+        date = await getGitCommitDate(absPath) ?? await getModifiedDate(absPath) ?? undefined;
       }
-      const iso = parsed.toISOString();
-      const effectiveDate = iso.endsWith('T00:00:00.000Z') ? iso.slice(0, 10) : iso.slice(0, 16);
+
+      if (!date) {
+        throw new Error(`Post date could not be determined for ${file}`);
+      }
+      const excerpt = typeof frontmatter.excerpt === 'string' ? frontmatter.excerpt : undefined;
+      const { html, excerpt: excerptFromHtml, assets, links } = await renderMarkdown({ markdown, absPath, title });
+      const indexed = /^\d+\//.test(file); // Only posts in a numeric directory are listed.
       return {
         urlPath,
         path: file,
-        date: effectiveDate,
-        indexed: /^\d+\//.test(file),
-        frontmatter: {
-          title: pick('title'),
-          date: pick('date'),
-          excerpt: pick('excerpt'),
-        },
+        date: date,
+        indexed,
         title,
-        excerpt: pick('excerpt') ?? excerpt,
+        excerpt: excerpt ?? excerptFromHtml ?? '',
         html,
         assets,
         links,
@@ -136,7 +144,7 @@ export async function getPostIndexData(options: { postsDir: string }): Promise<P
 
   return (await getPostMetas(options))
     .filter((meta) => meta.indexed)
-    .sort((a, b) => b.date.localeCompare(a.date))
+    .sort((a, b) => b.date.getTime() - a.date.getTime())
     // assets/links are build-only concerns (asset emission); keep them out of
     // the lean index/RSS shape, same as the rendered html.
     .map(({ html: _html, assets: _assets, links: _links, ...index }) => index);
@@ -164,7 +172,7 @@ export async function getRssXmlData(options: { postsDir: string }): Promise<stri
   const items = (await getPostIndexData(options)).map((meta) => ({
     url: `${SITE_URL}/${meta.urlPath}/`,
     title: meta.title,
-    date: new Date(meta.date),
+    date: meta.date,
   }));
 
   for (const { url, title, date } of items) {
