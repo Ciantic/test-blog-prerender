@@ -2,7 +2,7 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { Marked, Renderer } from 'marked';
-import type { Token, Tokens } from 'marked';
+import type { MarkedExtension, Token, Tokens } from 'marked';
 import markedAlert from 'marked-alert';
 import markedFootnote from 'marked-footnote';
 import { imageSize } from 'image-size';
@@ -88,6 +88,164 @@ function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }
 
+/** Options for {@link markedShiki}. */
+interface ShikiOptions {
+  /** Dual themes so code colors follow the light/dark theme. */
+  themes: { light: string; dark: string };
+  /** How the dual-theme colors are resolved. Defaults to light-dark(). */
+  defaultColor?: string;
+  /** Included in error messages for context (e.g. the post path). */
+  absPath?: string;
+}
+
+/**
+ * A marked extension that highlights fenced code blocks with shiki.
+ * Works like markedFootnote()/markedAlert(): register it in the Marked
+ * constructor and its walkTokens composes with any others.
+ */
+function markedShiki(options: ShikiOptions): MarkedExtension {
+  const { themes, defaultColor = 'light-dark()', absPath } = options;
+  const walkTokens = async (token: Token): Promise<void> => {
+    if (token.type !== 'code') return;
+    const code = token as HighlightedCode;
+    // First word of the info string is the language (e.g. "tsx" from "```tsx").
+    // Normalize to a lowercase shiki language id so e.g. "C#" highlights as C#.
+    const lang = (code.lang ?? '').trim().split(/\s+/)[0].toLowerCase();
+    // Dual themes emit --shiki-light/--shiki-dark CSS vars on each span so
+    // the code colors follow the daisyUI light/dark theme automatically.
+    // Unknown/unrecognized languages are rendered as plain text (the `text`
+    // special lang) instead of throwing and failing the whole post render.
+    try {
+      code.highlighted = await codeToHtml(code.text, {
+        lang: lang || 'text',
+        themes,
+        // light-dark() resolves colors from the inherited `color-scheme`,
+        // which daisyUI drives via its theme-controller (it sets
+        // color-scheme: dark on :root in dark mode, no data-theme attr).
+        // This makes code colors follow the theme toggle automatically.
+        defaultColor,
+      });
+    } catch (error) {
+      if (error instanceof ShikiError) {
+        console.warn(`Shiki error${absPath ? ` in ${absPath}` : ''}: ${error.message}. Falling back to unhighlighted code.`);
+        code.highlighted = await codeToHtml(code.text, {
+          lang: 'text',
+          themes,
+          defaultColor,
+        });
+      } else {
+        throw error;
+      }
+    }
+  };
+  return { walkTokens };
+}
+
+/** A marked extension that also exposes a computed value. */
+interface ExcerptExtension extends MarkedExtension {
+  /** The first paragraph of the document as plain text. */
+  getExcerpt(): string;
+}
+
+/**
+ * A marked extension that captures the first paragraph (in document order)
+ * as plain text — the excerpt fallback. Use it like markedFootnote(): pass it
+ * to the Marked constructor, then read getExcerpt() after parsing.
+ */
+function markedExcerpt(): ExcerptExtension {
+  let excerpt = '';
+  const walkTokens = (token: Token): void => {
+    // First paragraph (in document order) as plain text — the excerpt fallback.
+    if (token.type === 'paragraph' && !excerpt && token.tokens) {
+      excerpt = inlineText(token.tokens).replace(/\s+/g, ' ').trim();
+    }
+  };
+  return { walkTokens, getExcerpt: () => excerpt };
+}
+
+/** Options for {@link markedImageSizes}. */
+interface ImageSizesOptions {
+  /** Absolute path to the markdown file, used to resolve its image refs. */
+  absPath: string;
+}
+
+/**
+ * A marked extension that sizes the images in a post by reading each image
+ * from disk with non-blocking I/O (only the images that actually appear) and
+ * stashing the pixel dims on the token, which the renderer reads when building
+ * the <img> tag. Missing/unreadable images are silently left without dims.
+ */
+function markedImageSizes(options: ImageSizesOptions): MarkedExtension {
+  // The post's directory — image refs in the markdown are relative to it.
+  const postDir = dirname(options.absPath);
+  const walkTokens = async (token: Token): Promise<void> => {
+    if (token.type !== 'image') return;
+    const image = token as SizedImage;
+    try {
+      const dims = imageSize(await readFile(join(postDir, image.href.replace(/^\.\//, ''))));
+      // SVGs from image-size report width/height only when set explicitly.
+      if (dims.width && dims.height) {
+        image.dims = { width: dims.width, height: dims.height };
+      }
+    } catch {
+      // Unreadable or unsupported image — leave it without dimensions.
+    }
+  };
+  return { walkTokens };
+}
+
+/** A marked extension that also exposes computed values. */
+interface CollectAssetsExtension extends MarkedExtension {
+  /** Local files referenced (relative to the post dir), e.g. "img/a.png". */
+  getAssets(): string[];
+  /** URLs referenced: external links, absolute paths, and internal `.md` links. */
+  getLinks(): string[];
+}
+
+/**
+ * A marked extension that collects the assets and links a document references
+ * from its image srcs and link hrefs. Use it like markedExcerpt(): pass it to
+ * the Marked constructor, then read getAssets()/getLinks() after parsing.
+ */
+function markedCollectAssets(): CollectAssetsExtension {
+  // Local files the document references, relative to the document directory
+  // (e.g. "img/test-image.png").
+  const assets: string[] = [];
+  // URLs the document references: external links, absolute paths, and
+  // internal `.md` post links.
+  const links: string[] = [];
+  const walkTokens = (token: Token): void => {
+    if (token.type === 'image') {
+      collectRef((token as SizedImage).href, assets, links);
+    } else if (token.type === 'link') {
+      collectRef((token as Tokens.Link).href, assets, links);
+    }
+  };
+  return {
+    walkTokens,
+    getAssets: () => assets,
+    getLinks: () => links,
+  };
+}
+
+/**
+ * Categorize a reference (link href / image src) into the post's assets
+ * (local files, relative to the post dir) or links (external URLs, absolute
+ * paths, and internal `.md` post links). Fragment anchors are dropped.
+ */
+function collectRef(target: string, assets: string[], links: string[]): void {
+  const value = target.trim();
+  if (!value || value.startsWith('#')) return;
+  // External URL (scheme or protocol-relative), absolute path, or an internal
+  // post link (`.md` refs render as post URLs) — all are link targets.
+  if (/^(?:[a-z][a-z0-9+.-]*:)?\/\//i.test(value) || value.startsWith('/') || value.endsWith('.md')) {
+    if (!links.includes(value)) links.push(value);
+  } else {
+    const rel = value.replace(/^\.\//, '');
+    if (!assets.includes(rel)) assets.push(rel);
+  }
+}
+
 export function renderMarkdown({
   markdown,
   absPath,
@@ -96,90 +254,36 @@ export function renderMarkdown({
   markdown: string,
   absPath: string,
   title?: string,
-}): Promise<{ html: string; excerpt: string }> {
-  // The post's directory — image refs in the markdown are relative to it.
+}): Promise<{ html: string; excerpt: string; assets: string[]; links: string[] }> {
   const postDir = dirname(absPath);
-  // First paragraph (in document order) as plain text — the excerpt fallback.
-  let excerpt = '';
-  // Whether the document has its own top-level heading (ATX `#` or setext
-  // `Title\n=====`). When it doesn't, we inject an <h1> from fallbackTitle.
-  let hasHeading = false;
-  // walkTokens runs for every token before rendering. Making it async lets us
-  // read each image in this post with non-blocking I/O (only the images that
-  // actually appear) and stash the dims on the token for the renderer above.
-  const walkTokens = async (token: Token): Promise<void> => {
-    if (token.type === 'heading' && token.depth === 1) {
-      hasHeading = true;
-    } else if (token.type === 'image') {
-      const image = token as SizedImage;
-      try {
-        const dims = imageSize(await readFile(join(postDir, image.href.replace(/^\.\//, ''))));
-        // SVGs from image-size report width/height only when set explicitly.
-        if (dims.width && dims.height) {
-          image.dims = { width: dims.width, height: dims.height };
-        }
-      } catch {
-        // Unreadable or unsupported image — leave it without dimensions.
-      }
-    } else if (token.type === 'paragraph' && !excerpt && token.tokens) {
-      excerpt = inlineText(token.tokens).replace(/\s+/g, ' ').trim();
-    } else if (token.type === 'code') {
-      const code = token as HighlightedCode;
-      // First word of the info string is the language (e.g. "tsx" from "```tsx").
-      // Normalize to a lowercase shiki language id so e.g. "C#" highlights as C#.
-      const lang = (code.lang ?? '').trim().split(/\s+/)[0].toLowerCase();
-      // Dual themes emit --shiki-light/--shiki-dark CSS vars on each span so
-      // the code colors follow the daisyUI light/dark theme automatically.
-      // Unknown/unrecognized languages are rendered as plain text (the `text`
-      // special lang) instead of throwing and failing the whole post render.
-      try {
-        code.highlighted = await codeToHtml(code.text, {
-          lang: lang || 'text',
-          themes: { light: 'github-light', dark: 'github-dark' },
-          // light-dark() resolves colors from the inherited `color-scheme`,
-          // which daisyUI drives via its theme-controller (it sets
-          // color-scheme: dark on :root in dark mode, no data-theme attr).
-          // This makes code colors follow the theme toggle automatically.
-          defaultColor: 'light-dark()',
-        });
-      } catch (error) {
-        if (error instanceof ShikiError) {
-          console.warn(`Shiki error in ${absPath}: ${error.message}. Falling back to unhighlighted code.`);
-          code.highlighted = await codeToHtml(code.text, {
-            lang: 'text',
-            themes: { light: 'github-light', dark: 'github-dark' },
-            defaultColor: 'light-dark()',
-          });
-        } else {
-          throw error;
-        }
-      }
-    }
-  };
-  // A fresh Marked instance per render: its walkTokens closes over this
-  // render's postDir/excerpt/hasHeading, and the constructor's `use()` chains
-  // it with marked-alert's walkTokens so alerts ([!NOTE] etc.) are detected.
-  // (Passing walkTokens as a parse option would override the extension's own
-  // walkTokens instead of composing with it.) A per-render instance also keeps
-  // concurrent renders (Promise.all across posts) from sharing mutable state.
-  // markedAlert() and markedFootnote() both register their own tokenizers +
-  // walkTokens; the Marked constructor composes them the same way marked-alert
-  // was already composed here. refMarkers wraps refs in [1] square brackets so
-  // we don't need extra CSS to draw them.
-  const marked = new Marked(markedAlert(), markedFootnote({ refMarkers: true }), {
-    async: true,
-    walkTokens,
-  });
+  // Per-render extension instances: their walkTokens run during parsing and
+  // their getters expose the computed values afterward.
+  const excerptExt = markedExcerpt();
+  const collectAssetsExt = markedCollectAssets();
+  const marked = new Marked(
+    markedAlert(),
+    markedImageSizes({ absPath }),
+    markedShiki({ themes: { light: 'github-light', dark: 'github-dark' }, absPath }),
+    excerptExt,
+    collectAssetsExt,
+    markedFootnote({ refMarkers: true }),
+    {
+      async: true,
+    },
+  );
   return marked.parse(markdown, {
     async: true,
     renderer: new PostImageRenderer(),
   }).then((html) => {
-    // Some old posts carry their title only in frontmatter, not as a heading
-    // in the body. Give those a visible <h1> (escaped) so the page isn't
-    // heading-less. Posts that already have a top-level heading are untouched.
-    if (!hasHeading && title) {
-      html = `<h1>${escapeHtml(title)}</h1>${html}`;
+    // Prepend H1 from frontmatter, if the markdown body has no heading of its own.
+    if (!/<h1[\s>]/i.test(html) && title) {
+      html = `<h1>${escapeHtml(title)}</h1>\n${html}`;
     }
-    return { html, excerpt };
+    return {
+      html,
+      excerpt: excerptExt.getExcerpt(),
+      assets: collectAssetsExt.getAssets(),
+      links: collectAssetsExt.getLinks(),
+    };
   });
 }
