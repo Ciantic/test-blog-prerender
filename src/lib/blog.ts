@@ -4,10 +4,9 @@ import { Feed } from 'feed';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import matter from 'gray-matter';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { dirname, basename, join } from 'node:path';
 import { renderMarkdown } from './markdown';
-import { readdirSync } from 'node:fs';
 import { memoizeFile } from './vite-cache-plugin';
 import {
   SITE_URL,
@@ -23,8 +22,8 @@ const execFileAsync = promisify(execFile);
 const getPostsDir = (): string => import.meta.env.VITE_POSTS_DIR as string;
 
 /** All files under a posts/ dir recursively, as absolute paths. */
-function getPostFiles(postsDir: string): string[] {
-  return readdirSync(postsDir, { recursive: true, encoding: 'utf-8', withFileTypes: true })
+async function getPostFiles(postsDir: string): Promise<string[]> {
+  return (await readdir(postsDir, { recursive: true, encoding: 'utf-8', withFileTypes: true }))
     .filter((d) => d.isFile())
     .map((d) => join(d.parentPath, d.name));
 }
@@ -112,7 +111,7 @@ async function computePostMetaUncached(absPath: string, postsDir: string): Promi
 }
 
 export async function getPostMetas(postsDir: string = getPostsDir()): Promise<PostMeta[]> {
-  const files = getPostFiles(postsDir).filter((f) => f.endsWith('.md'));
+  const files = (await getPostFiles(postsDir)).filter((f) => f.endsWith('.md'));
   const results = await Promise.all(files.map((f) => computePostMeta(f, postsDir)));
   return results.filter((m) => m !== null);
 }
@@ -120,7 +119,7 @@ export async function getPostMetas(postsDir: string = getPostsDir()): Promise<Po
 
 export async function getPostData(urlPath: string, postsDir: string = getPostsDir()): Promise<PostMeta | undefined> {
   const absPath = join(postsDir, `${urlPath}.md`);
-  if (!getPostFiles(postsDir).includes(absPath)) return undefined;
+  if (!(await getPostFiles(postsDir)).includes(absPath)) return undefined;
   return (await computePostMeta(absPath, postsDir)) ?? undefined;
 }
 
