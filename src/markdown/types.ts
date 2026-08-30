@@ -1,8 +1,7 @@
 /**
- * Post metadata produced at build time by vite.config.ts and shipped to app
- * code through the virtual:post-meta modules. This file is the single source
- * of truth for the shapes — both vite.config.ts (producer) and src/lib/blog.ts
- * (consumer) import it from here.
+ * Post metadata produced by src/markdown/posts.ts and consumed by app code.
+ * This file is the single source of truth for the shapes — both
+ * vite.config.ts (producer) and src/lib/api.ts (consumer) import it from here.
  */
 export interface PostMetaIndex {
   /** URL path inside the site (no leading/trailing slash), e.g. '2026/my-post'. */

@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/solid-start';
 import { staticFunctionMiddleware } from '@tanstack/start-static-server-functions';
-import { getPostData, getPostIndexData, getRssXmlData } from './blog';
+import { getPostData, getPostIndexData, getRssXmlData } from '../markdown/posts';
 
 export const getPosts = createServerFn({ method: 'GET' })
   .middleware([staticFunctionMiddleware as any])

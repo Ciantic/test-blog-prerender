@@ -3,16 +3,23 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import solid from 'vite-plugin-solid';
 import { dirname, join, normalize } from 'node:path';
-import { getPostMetas } from './src/lib/blog';
-import { ensureCacheEngine, viteCachePlugin } from './src/lib/vite-cache-plugin';
+import { createFileCache } from './src/markdown/cache';
+import { createPosts } from './src/markdown/posts';
 import { postAssetsPlugin } from './src/lib/vite-post-assets-plugin';
 
 const POSTS_DIR = join(import.meta.dirname, 'posts');
 const CACHE_DIR = join(import.meta.dirname, 'node_modules/.vite');
 
 export default defineConfig(async () => {
-  ensureCacheEngine(CACHE_DIR);
-  const metas = await getPostMetas(POSTS_DIR);
+  // Content-agnostic memoization for the per-post meta computation. Vite's
+  // logger is injected so HIT/MISS lines match the surrounding Vite output.
+  // `--force` / CLEAR_CACHE clear it (handled inside createFileCache).
+  const cache = createFileCache({
+    cacheDir: CACHE_DIR,
+    log: (msg) => console.log(`[vite] ${msg}`),
+  });
+  const posts = createPosts({ postsDir: POSTS_DIR, cache });
+  const metas = await posts.getPostMetas();
   const assetPaths = metas.flatMap((meta) =>
     meta.assets.map((asset) => normalize(join(dirname(meta.path), asset))),
   );
@@ -26,7 +33,6 @@ export default defineConfig(async () => {
     // src/routes and generates src/routeTree.gen.ts, and prerenders the app to
     // static HTML at build time.
     plugins: [
-      viteCachePlugin(CACHE_DIR),
       postAssetsPlugin(POSTS_DIR, assetPaths),
       tanstackStart({
         prerender: {

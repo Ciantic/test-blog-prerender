@@ -1,6 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/solid-router';
 import { formatDateFinnish } from '../lib/date';
-import type { PostMetaIndex } from '../post-meta';
+import type { PostMetaIndex } from '../markdown/types';
 import { getPosts } from '../lib/api';
 import { SITE_NAME } from '../site';
 
