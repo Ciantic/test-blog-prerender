@@ -64,9 +64,6 @@ async function computePostMetaUncached(
       const out = stdout.trim();
       if (!out) return null; // No commit for this file yet — skip it.
       const date = out.split('\n')[0];
-      // Parse frontmatter once here so app code never needs gray-matter
-      // (which doesn't work in the browser). Unquoted YAML dates become
-      // Date objects — normalize them to ISO strings.
       const { data, content } = matter(await readFile(absPath, 'utf-8'));
       const pick = (key: string): string | undefined => {
         const value = data[key];
@@ -75,23 +72,10 @@ async function computePostMetaUncached(
         if (typeof value === 'number' || typeof value === 'boolean') return String(value);
         return undefined;
       };
-      // Path relative to the posts dir, used for the URL slug and the `path` field.
       const file = absPath.slice(postsDir.length + 1).replaceAll('\\', '/');
       const urlPath = file.replace(/\.md$/, '');
-      // Render the body (frontmatter stripped) to HTML here, so app code
-      // never needs marked either. The excerpt fallback (first paragraph as
-      // plain text) is derived from the token tree at the same time.
-      // assets/links are the local files and URLs the post references, collected
-      // by the markdown pipeline. The build uses `assets` to emit only the files
-      // a post actually needs (see vite-post-assets-plugin.ts).
       const { html, excerpt, assets, links } = await renderMarkdown({ markdown: content, absPath, title: pick('title') });
-      // Effective title/excerpt resolved here too: frontmatter wins, then
-      // the markdown heading / first paragraph, then the slug.
       const title = pick('title') ?? content.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? "Unknown title";
-      // Effective publish date: frontmatter overrides git date. Normalized
-      // so app code never needs Date parsing: date-only posts stay
-      // YYYY-MM-DD (Finnish formatter + year grouping), datetimes become
-      // YYYY-MM-DDTHH:mm. Sorting works lexicographically on both forms.
       const fmDate = data.date instanceof Date ? data.date : undefined;
       const parsed = fmDate ?? new Date(pick('date') ?? date);
       if (Number.isNaN(parsed.getTime())) {
