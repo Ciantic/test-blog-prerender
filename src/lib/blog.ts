@@ -7,7 +7,7 @@ import matter from 'gray-matter';
 import { readFile } from 'node:fs/promises';
 import { dirname, basename, join } from 'node:path';
 import { renderMarkdown } from './markdown';
-import { getPostFiles } from './common';
+import { readdirSync } from 'node:fs';
 import { memoizeFile } from './vite-cache-plugin';
 import {
   SITE_URL,
@@ -19,15 +19,15 @@ import {
 const execFileAsync = promisify(execFile);
 
 
-/**
- * Posts dir used by the app-facing entry points. Resolved lazily so this
- * module can also be bundled into vite.config.ts, where `import.meta.env`
- * isn't defined (the VITE_POSTS_DIR define only applies to app code, not the
- * config bundle). Config-time callers (postAssetsPlugin) always pass an
- * explicit postsDir, so this getter never runs there.
- */
+
 const getPostsDir = (): string => import.meta.env.VITE_POSTS_DIR as string;
 
+/** All files under a posts/ dir recursively, as absolute paths. */
+function getPostFiles(postsDir: string): string[] {
+  return readdirSync(postsDir, { recursive: true, encoding: 'utf-8', withFileTypes: true })
+    .filter((d) => d.isFile())
+    .map((d) => join(d.parentPath, d.name));
+}
 
 // Expensive work (git date + markdown render) cached to Vite's cache dir and
 // invalidated when the post file's mtime/size change. See vite-cache-plugin.ts.
