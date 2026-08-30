@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, stat, writeFile, readdir, unlink } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, readdir, unlink } from 'node:fs/promises';
 import { join, relative, isAbsolute } from 'node:path';
 import pc from 'picocolors';
 
@@ -56,40 +56,46 @@ function ensureInit(): void {
 }
 
 /**
- * Run `build` once per (key, source file version) and reuse the JSON-cached
- * result afterwards. Results are stored as JSON in the cache dir and reused
- * across process runs while the source file's mtime/size are unchanged.
- * Returns `null` unchanged (null results are not cached).
+ * Run `build` once per (key, source stamp) and reuse the JSON-cached result
+ * afterwards. Results are stored as JSON in the cache dir and reused across
+ * process runs while `stamp()` keeps returning the same value. The stamp is
+ * an opaque "current version" of the source(s) that feed `build` — for files
+ * that's typically mtime+size, but any stable string works (content hash, git
+ * sha, multiple files). Return `null` to both skip the cache check and avoid
+ * writing an entry. `build` returning `null` is also not cached.
  */
 export async function memoize<T>({
   key,
-  sourcePath,
   build,
+  stamp,
+  label,
 }: {
   key: string;
-  sourcePath: string;
+  /** Async computation to memoize. */
   build: () => Promise<T | null>;
+  /** Current version of the source(s) behind `build`. */
+  stamp: () => Promise<string | null>;
+  /** Optional log label (e.g. a file path); defaults to `key`. */
+  label?: string;
 }): Promise<T | null> {
   ensureInit();
   const hash = createHash('sha1').update(key).digest('hex');
   const file = join(cacheDir!, `file-${hash}.json`);
+  const tag = label ?? key;
 
   // Reuse an already-running computation for this key rather than racing it.
   const pending = inFlight.get(key);
   if (pending) return pending as Promise<T | null>;
 
   const run = (async () => {
-    const st = await stat(sourcePath).catch(() => null);
-    if (st) {
+    const current = await stamp();
+    if (current !== null) {
       const raw = await readFile(file, 'utf-8').catch(() => null);
       if (raw) {
         try {
-          const entry = JSON.parse(raw) as {
-            source: { mtimeMs: number; size: number };
-            value: T;
-          };
-          if (entry.source.mtimeMs === st.mtimeMs && entry.source.size === st.size) {
-            log(`HIT ${displayPath(sourcePath)}`);
+          const entry = JSON.parse(raw) as { stamp: string; value: T };
+          if (entry.stamp === current) {
+            log(`HIT ${displayPath(tag)}`);
             return entry.value;
           }
         } catch {
@@ -98,14 +104,11 @@ export async function memoize<T>({
       }
     }
 
-    log(`MISS ${displayPath(sourcePath)}`);
+    log(`MISS ${displayPath(tag)}`);
     const value = await build();
-    if (value !== null && st) {
+    if (value !== null && current !== null) {
       await mkdir(cacheDir!, { recursive: true }).catch(() => {});
-      await writeFile(
-        file,
-        JSON.stringify({ source: { mtimeMs: st.mtimeMs, size: st.size }, value }),
-      ).catch(() => {});
+      await writeFile(file, JSON.stringify({ stamp: current, value })).catch(() => {});
     }
     return value;
   })();

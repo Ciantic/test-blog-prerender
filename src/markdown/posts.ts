@@ -3,7 +3,7 @@ import { Feed } from 'feed';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import matter from 'gray-matter';
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import { dirname, basename, join } from 'node:path';
 import { renderMarkdown } from './render';
 import { memoize } from './cache';
@@ -29,7 +29,16 @@ async function getPostFiles(postsDir: string): Promise<string[]> {
 async function computePostMeta(
   { absPath, postsDir }: { absPath: string; postsDir: string },
 ): Promise<PostMeta | null> {
-  return memoize({ key: absPath + postsDir, sourcePath: absPath, build: () => computePostMetaUncached(absPath, postsDir) });
+  const fileStamp = async (): Promise<string | null> => {
+    const st = await stat(absPath).catch(() => null);
+    return st ? `${st.mtimeMs}:${st.size}` : null;
+  };
+  return memoize({
+    key: absPath + postsDir,
+    label: absPath,
+    stamp: fileStamp,
+    build: () => computePostMetaUncached(absPath, postsDir),
+  });
 }
 
 async function computePostMetaUncached(
