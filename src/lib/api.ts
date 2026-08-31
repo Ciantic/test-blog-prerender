@@ -1,18 +1,22 @@
 import { createServerFn } from '@tanstack/solid-start';
 import { staticFunctionMiddleware } from '@tanstack/start-static-server-functions';
-import { getPostData, getPostIndexData, getRssXmlData } from './blog';
+import {
+  getPostData,
+  getPostIndexData,
+  getRssXmlData,
+} from '../markdown/posts';
 
 export const getPosts = createServerFn({ method: 'GET' })
   .middleware([staticFunctionMiddleware as any])
   .handler(async () => {
-    return await getPostIndexData();
+    return await getPostIndexData({ postsDir: import.meta.env.MARKDOWN_POSTS_DIR  });
   });
 
 export const getPost = createServerFn({ method: 'GET' })
   .validator((urlPath: string) => urlPath)
   .middleware([staticFunctionMiddleware as any])
   .handler(async ({ data: urlPath }) => {
-    return await getPostData(urlPath);
+    return await getPostData({ urlPath, postsDir: import.meta.env.MARKDOWN_POSTS_DIR  });
   });
 
 // Builds the RSS feed (raw XML string) from the committed, indexed posts.
@@ -21,5 +25,5 @@ export const getPost = createServerFn({ method: 'GET' })
 export const getRssXml = createServerFn({ method: 'GET' })
   .middleware([staticFunctionMiddleware as any])
   .handler(async () => {
-    return await getRssXmlData();
+    return await getRssXmlData({ postsDir: import.meta.env.MARKDOWN_POSTS_DIR  });
   });

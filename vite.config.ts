@@ -3,31 +3,35 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import solid from 'vite-plugin-solid';
 import { dirname, join, normalize } from 'node:path';
-import { getPostMetas } from './src/lib/blog';
-import { ensureCacheEngine, viteCachePlugin } from './src/lib/vite-cache-plugin';
+import { initFileCache } from './src/markdown/cache';
+import { getPostMetas } from './src/markdown/posts';
 import { postAssetsPlugin } from './src/lib/vite-post-assets-plugin';
 
-const POSTS_DIR = join(import.meta.dirname, 'posts');
-const CACHE_DIR = join(import.meta.dirname, 'node_modules/.vite');
+const MARKDOWN_POSTS_DIR = join(import.meta.dirname, 'posts');
+const MARKDOWN_CACHE_DIR = join(import.meta.dirname, 'node_modules/.markdown-cache');
 
 export default defineConfig(async () => {
-  ensureCacheEngine(CACHE_DIR);
-  const metas = await getPostMetas(POSTS_DIR);
+  await initFileCache({ 
+    cacheDir: MARKDOWN_CACHE_DIR,
+
+    // Clear cache if `--force` is passed or CLEAR_CACHE=1 is set
+    clearCache: process.argv.includes('--force') || !!process.env.CLEAR_CACHE
+  });
+
+  const metas = await getPostMetas({ postsDir: MARKDOWN_POSTS_DIR });
   const assetPaths = metas.flatMap((meta) =>
     meta.assets.map((asset) => normalize(join(dirname(meta.path), asset))),
   );
 
   return {
-    cacheDir: CACHE_DIR,
+    // cacheDir: CACHE_DIR,
     define: {
-      'import.meta.env.VITE_POSTS_DIR': JSON.stringify(POSTS_DIR),
+      'import.meta.env.MARKDOWN_POSTS_DIR': JSON.stringify(MARKDOWN_POSTS_DIR),
+      'import.meta.env.MARKDOWN_CACHE_DIR': JSON.stringify(MARKDOWN_CACHE_DIR),
     },
-    // TanStack Start owns the entries, dev serving, and the build. It scans
-    // src/routes and generates src/routeTree.gen.ts, and prerenders the app to
-    // static HTML at build time.
+
     plugins: [
-      viteCachePlugin(CACHE_DIR),
-      postAssetsPlugin(POSTS_DIR, assetPaths),
+      postAssetsPlugin(MARKDOWN_POSTS_DIR, assetPaths),
       tanstackStart({
         prerender: {
           // Enable prerendering.
