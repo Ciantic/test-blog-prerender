@@ -1,6 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/solid-router';
 import { formatDate, formatDateShort } from '../lib/date';
-import type { PostMetaIndex } from '../post-meta';
+import type { PostMetaIndex } from '../markdown/types';
 import { getPosts } from '../lib/api';
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE } from '../site';
 
@@ -14,7 +14,7 @@ function Home() {
   const byYear = () => {
     const groups = new Map<number, PostMetaIndex[]>();
     for (const post of posts()) {
-      const year = Number(post.date.slice(0, 4));
+      const year = post.date.getUTCFullYear();
       const list = groups.get(year);
       if (list) list.push(post);
       else groups.set(year, [post]);
@@ -46,7 +46,7 @@ function Home() {
                   class="group flex items-baseline gap-6 py-5 transition-colors"
                 >
                   <time
-                    datetime={post.date}
+                    datetime={post.date.toISOString()}
                     class="w-15 shrink-0 text-base-content/50"
                   >
                     {formatDateShort(post.date)}
