@@ -8,19 +8,9 @@ const cyan = pc.cyan;
 
 /** Options for {@link initFileCache}. */
 export interface FileCacheOptions {
-  /** Directory where `file-<hash>.json` entries are stored. */
   cacheDir: string;
-  /**
-   * Logger for HIT/MISS/clear lines. Defaults to console.log with a
-   * `[markdown-cache]` prefix; Vite's logger can be injected so output
-   * matches the surrounding Vite styling.
-   */
   log?: (msg: string) => void;
-  /**
-   * Clear the cache directory on creation (e.g. `vite --force` or the
-   * `CLEAR_CACHE` env var). Defaults to detecting those triggers itself.
-   */
-  clearOnCreate?: boolean;
+  clearCache?: boolean;
 }
 
 /**
@@ -125,22 +115,14 @@ export async function memoize<T>({
 }
 
 /** Remove all cached entries. Best effort; logs how many were removed. */
-export async function clearCache(reason: string): Promise<void> {
+export async function clearCache(): Promise<void> {
   ensureInit();
   const entries = await readdir(cacheDir!).catch(() => []);
   const targets = entries.filter((e) => e.startsWith('file-') && e.endsWith('.json'));
   await Promise.all(targets.map((e) => unlink(join(cacheDir!, e))));
-  log(`cleared ${targets.length} cache file(s) (${reason})`);
+  log(`cleared ${targets.length} cache file(s)`);
 }
 
-/**
- * Explicitly initialize the process-wide file cache. Optional: `memoize`
- * self-initializes from the Vite define of VITE_CACHE_DIR on first use.
- * Explicit init exists for the one caller that runs before Vite's `define`
- * replacement applies (the vite.config.ts factory, where import.meta.env is
- * still undefined) and lets it inject a custom logger. Throws if already
- * initialized, so a stray second init can't silently redirect the cache.
- */
 export async function initFileCache(options: FileCacheOptions): Promise<void> {
   if (cacheDir) {
     throw new Error('File cache already initialized; call initFileCache only once.');
@@ -148,8 +130,7 @@ export async function initFileCache(options: FileCacheOptions): Promise<void> {
   cacheDir = options.cacheDir;
   log = options.log ?? ((msg: string) => console.log(`${cyan('[markdown-cache]')} ${msg}`));
 
-  if (options?.clearOnCreate ?? (process.argv.includes('--force') || !!process.env.CLEAR_CACHE)) {
-    const reason = process.argv.includes('--force') ? '--force' : 'CLEAR_CACHE';
-    await clearCache(reason);
+  if (options?.clearCache) {
+    await clearCache();
   }
 }

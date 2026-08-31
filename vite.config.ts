@@ -11,7 +11,13 @@ const POSTS_DIR = join(import.meta.dirname, 'posts');
 const CACHE_DIR = join(import.meta.dirname, 'node_modules/.vite');
 
 export default defineConfig(async () => {
-  await initFileCache({ cacheDir: CACHE_DIR });
+  await initFileCache({ 
+    cacheDir: CACHE_DIR,
+
+    // Clear cache if `--force` is passed or CLEAR_CACHE=1 is set
+    clearCache: process.argv.includes('--force') || !!process.env.CLEAR_CACHE
+  });
+
   const metas = await getPostMetas({ postsDir: POSTS_DIR });
   const assetPaths = metas.flatMap((meta) =>
     meta.assets.map((asset) => normalize(join(dirname(meta.path), asset))),
@@ -21,14 +27,9 @@ export default defineConfig(async () => {
     cacheDir: CACHE_DIR,
     define: {
       'import.meta.env.VITE_POSTS_DIR': JSON.stringify(POSTS_DIR),
-      // Injected so the SSR/prerender bundle's default posts instance uses the
-      // same cache dir as this config-side instance. Resolving it from
-      // import.meta.dirname inside the bundle would land in dist/ instead.
       'import.meta.env.VITE_CACHE_DIR': JSON.stringify(CACHE_DIR),
     },
-    // TanStack Start owns the entries, dev serving, and the build. It scans
-    // src/routes and generates src/routeTree.gen.ts, and prerenders the app to
-    // static HTML at build time.
+
     plugins: [
       postAssetsPlugin(POSTS_DIR, assetPaths),
       tanstackStart({
