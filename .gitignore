@@ -28,6 +28,3 @@ gitignore
 Thumbs.db
 
 TODO.md
-
-# Enabling this line makes live-reload not working, why?
-_*.md 
