@@ -17,6 +17,8 @@ import {
 
 const execFileAsync = promisify(execFile);
 
+const PROD = process.env.NODE_ENV === 'production';
+
 /** All files under a posts/ dir recursively, as absolute paths. */
 async function getPostFiles(postsDir: string): Promise<string[]> {
   return (await readdir(postsDir, { recursive: true, encoding: 'utf-8', withFileTypes: true }))
@@ -93,6 +95,7 @@ async function computePostMetaUncached(
       if (!date) {
         throw new Error(`Post date could not be determined for ${file}`);
       }
+      const draft = basename(file).startsWith("_");
       const excerpt = typeof frontmatter.excerpt === 'string' ? frontmatter.excerpt : undefined;
       const { html, excerpt: excerptFromHtml, assets, links } = await renderMarkdown({ markdown, absPath, title });
       const indexed = /^\d+\//.test(file); // Only posts in a numeric directory are listed.
@@ -100,6 +103,7 @@ async function computePostMetaUncached(
         urlPath,
         path: file,
         date: date,
+        draft,
         indexed,
         title,
         excerpt: excerpt ?? excerptFromHtml ?? '',
@@ -120,7 +124,9 @@ export async function getPostMetas(options: { postsDir: string }): Promise<PostM
   const files = (await getPostFiles(options.postsDir)).filter((f) => f.endsWith('.md'));
   const results = await Promise.all(files.map((f) => computePostMeta({
     absPath: f, postsDir: options.postsDir })));
-  return results.filter((m) => m !== null);
+  return results
+    .filter((m): m is PostMeta => m !== null)
+    .filter((m) => !(PROD && m.draft));
 }
 
 /** A single post by its URL path, or undefined if it doesn't exist. */

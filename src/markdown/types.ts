@@ -11,6 +11,7 @@ export interface PostMetaIndex {
   /** Date is determined first from frontmatter field date, secondarily from
    * git commit date, and tertiarily from file modification time */
   date: Date;
+  draft: boolean;
   /** Is the markdown file part of the blog/RSS index (listed) as post */
   indexed: boolean;
   title: string;

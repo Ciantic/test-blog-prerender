@@ -54,6 +54,14 @@ function Home() {
                   <div class="min-w-0">
                     <h3 class="text-xl font-semibold group-hover:text-primary">
                       {post.title}
+                      {post.draft && (
+                        <span
+                          class="ml-2 inline-block rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 align-middle text-xs font-medium uppercase tracking-wide text-warning"
+                          title="Not published to production"
+                        >
+                          Draft
+                        </span>
+                      )}
                       <span
                         class="ml-2 inline-block opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100"
                         aria-hidden="true"

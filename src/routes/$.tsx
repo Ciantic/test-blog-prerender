@@ -10,8 +10,16 @@ function PostPage() {
   return (
     <main class="container mx-auto max-w-3xl px-4 py-12">
       <Show when={post().indexed}>
-        <p class="text-sm text-base-content/50 mb-6">
+        <p class="text-sm text-base-content/50 mb-6 flex items-center gap-2">
           {formatDate(post().date)}
+          <Show when={post().draft}>
+            <span
+              class="inline-block rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-warning"
+              title="Not published to production"
+            >
+              Draft
+            </span>
+          </Show>
         </p>
       </Show>
       <article class="prose lg:prose-lg">
