@@ -32,17 +32,17 @@ const inFlight = new Map<string, Promise<unknown>>();
 
 /**
  * Make sure the cache is initialized. Explicit init (vite.config.ts) wins;
- * otherwise fall back to the Vite define of VITE_CACHE_DIR on first use —
+ * otherwise fall back to the Vite define of MARKDOWN_CACHE_DIR on first use —
  * the SSR/prerender bundles never call initFileCache themselves.
  */
 function ensureInit(): void {
   if (cacheDir) return;
-  if (!import.meta.env.VITE_CACHE_DIR) {
+  if (!import.meta.env.MARKDOWN_CACHE_DIR) {
     throw new Error(
-      'File cache not initialized: call initFileCache() or define VITE_CACHE_DIR in vite.config.ts.',
+      'File cache not initialized: call initFileCache() or define MARKDOWN_CACHE_DIR in vite.config.ts.',
     );
   }
-  cacheDir = import.meta.env.VITE_CACHE_DIR;
+  cacheDir = import.meta.env.MARKDOWN_CACHE_DIR;
   log = (msg: string) => console.log(`${cyan('[markdown-cache]')} ${msg}`);
 }
 

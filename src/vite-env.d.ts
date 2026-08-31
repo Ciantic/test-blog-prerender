@@ -5,9 +5,9 @@
 // import.meta.env.VITE_* anywhere in the codebase.
 interface ImportMetaEnv {
   /** Resolved absolute path to the posts/ directory, injected at build time. */
-  readonly VITE_POSTS_DIR: string;
+  readonly MARKDOWN_POSTS_DIR: string;
   /** Resolved absolute path to the file cache dir, injected at build time. */
-  readonly VITE_CACHE_DIR: string;
+  readonly MARKDOWN_CACHE_DIR: string;
 }
 
 interface ImportMeta {
