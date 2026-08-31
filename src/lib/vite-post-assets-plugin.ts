@@ -14,6 +14,14 @@ export function postAssetsPlugin(postsDir: string, assetPaths: string[]): Plugin
   const assetSet = new Set(assetPaths);
   return {
     name: 'post-assets-server',
+
+    hotUpdate({ file, server }) {
+      if (this.environment.name !== 'client') return;
+      if (!file.startsWith(postsDir)) return;
+      console.log("[post-assets-server] file changed:", file);
+      server.environments.client.hot.send({ type: 'full-reload' });
+      return [];
+    },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = (req.url ?? '').split('?')[0];
