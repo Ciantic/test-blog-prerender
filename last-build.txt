@@ -14,7 +14,7 @@ dist/client/2010/add-your-program-to-default-programs-in-windows7-02.png  105.99
 dist/client/2021/good-enough-02.jpg                                       108.18 kB
 dist/client/2010/add-your-program-to-default-programs-in-windows7-01.png  110.40 kB
 dist/client/2021/good-enough-01.jpg                                       182.31 kB
-dist/client/assets/App-BhSVEO8E.css                                       105.09 kB │ gzip: 16.64 kB
+dist/client/assets/App-EAV7IiDx.css                                       105.18 kB │ gzip: 16.65 kB
 dist/client/assets/date-Bl1NHTRs.js                                         0.24 kB │ gzip:  0.17 kB
 dist/client/assets/routes-CzE0kkI3.js                                       0.45 kB │ gzip:  0.29 kB
 dist/client/assets/_-DDDfAtdo.js                                            0.54 kB │ gzip:  0.37 kB
@@ -22,5 +22,5 @@ dist/client/assets/about-CwyZ1Pb1.js                                        1.04
 dist/client/assets/_-CqjDq-M6.js                                            1.26 kB │ gzip:  0.70 kB
 dist/client/assets/routes-pKRcKlXh.js                                       2.41 kB │ gzip:  1.22 kB
 dist/client/assets/api-BXcvF-ni.js                                         48.01 kB │ gzip: 14.37 kB
-dist/client/assets/index-BxBRYaCQ.js                                       67.15 kB │ gzip: 23.79 kB
+dist/client/assets/index-DDritvoE.js                                       67.15 kB │ gzip: 23.79 kB
 dist/client/assets/link-CQiba5Ec.js                                        88.52 kB │ gzip: 32.19 kB
