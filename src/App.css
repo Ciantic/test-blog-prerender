@@ -8,6 +8,12 @@
 .prose {
   max-width: none;
 }
+/* The typography plugin wraps the first paragraph of a blockquote in
+   typographic quotes ("..."); we don't want that. */
+.prose blockquote p:first-of-type::before,
+.prose blockquote p:first-of-type::after {
+  content: none;
+}
 .prose h1,
 .prose h2,
 .prose h3,
