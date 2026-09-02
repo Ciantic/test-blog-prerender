@@ -1,3 +1,3 @@
 This is SolidJS v2 project, documentation is here if needed https://v2.solidjs.com/
 
-Project has dev server, and it might be running already in background in port 3000, or static server running in 4173, before starting a server check if they are already running. They don't need to be restarted.
+Project has dev server, and it is likely running already in background in port 3000, or static server running in 4173. If you think you need to access http://localhost:3000/ then don't try to start one blindly, try accessing first. Dev server shouldn't need a restart, it does that automatically.
