@@ -36,11 +36,11 @@ export const Route = createRootRoute({
     </RootDocument>
   ),
   notFoundComponent: () => (
-    <main class="container mx-auto px-4 py-16 text-center">
-      <h1 class="text-4xl font-bold mb-4">Page Not Found</h1>
+    <main class="container page not-found">
+      <h1>Page Not Found</h1>
       <p>
         Visit{' '}
-        <a href="https://docs.solidjs.com" target="_blank" rel="noreferrer" class="link link-primary">
+        <a href="https://docs.solidjs.com" target="_blank" rel="noreferrer">
           docs.solidjs.com
         </a>{' '}
         to learn how to build Solid apps.

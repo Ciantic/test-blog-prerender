@@ -112,7 +112,7 @@ function markedShiki(options: ShikiOptions): MarkedExtension {
     // Normalize to a lowercase shiki language id so e.g. "C#" highlights as C#.
     const lang = (code.lang ?? '').trim().split(/\s+/)[0].toLowerCase();
     // Dual themes emit --shiki-light/--shiki-dark CSS vars on each span so
-    // the code colors follow the daisyUI light/dark theme automatically.
+    // the code colors follow the site's light/dark scheme automatically.
     // Unknown/unrecognized languages are rendered as plain text (the `text`
     // special lang) instead of throwing and failing the whole post render.
     try {
@@ -120,8 +120,9 @@ function markedShiki(options: ShikiOptions): MarkedExtension {
         lang: lang || 'text',
         themes,
         // light-dark() resolves colors from the inherited `color-scheme`,
-        // which daisyUI drives via its theme-controller (it sets
-        // color-scheme: dark on :root in dark mode, no data-theme attr).
+        // which the vanilla theme toggle in App.css drives via a hidden
+        // .theme-controller checkbox (`:root:has(:checked)` sets
+        // color-scheme: dark). No data-theme attr needed.
         // This makes code colors follow the theme toggle automatically.
         defaultColor,
       });

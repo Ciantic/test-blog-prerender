@@ -23,55 +23,48 @@ function Home() {
   };
 
   return (
-    <main class="container mx-auto max-w-3xl px-4 py-12">
-      <header class="mb-10">
-        <h1 class="text-5xl font-bold tracking-tight sr-only">{SITE_NAME}</h1>
-        <p class="mt-3 text-base-content/60 text-lg sm:text-xl">
-          {SITE_DESCRIPTION}
-        </p>
+    <main class="container page">
+      <header class="home-head">
+        <h1 class="sr-only">{SITE_NAME}</h1>
+        <p class="home-tagline">{SITE_DESCRIPTION}</p>
       </header>
 
       {byYear().map(([year, yearPosts]) => (
-        <section class="mb-12">
-          <h2 class="mb-4 flex items-center gap-4 font-semibold uppercase tracking-widest text-base-content/50 sticky top-0 z-10 bg-base-100">
-            {year}
-            <span class="h-px flex-1 bg-base-content/15" aria-hidden="true" />
-          </h2>
-          <ul>
+        <section class="year">
+          <h2 class="year__title">{year}</h2>
+          <ul class="post-list">
             {yearPosts.map((post) => (
-              <li class="border-b border-base-content/10 last:border-b-0">
+              <li class="post-list__item">
                 <Link
                   to="/$/"
                   params={{ _splat: post.urlPath }}
-                  class="group flex items-baseline gap-6 py-5 transition-colors"
+                  class="post-link"
                 >
                   <time
                     datetime={post.date.toISOString()}
-                    class="w-15 shrink-0 text-base-content/50"
+                    class="post-link__date"
                   >
                     {formatDateShort(post.date)}
                   </time>
-                  <div class="min-w-0">
-                    <h3 class="text-xl font-semibold group-hover:text-primary">
+                  <div class="post-link__body">
+                    <h3 class="post-link__title">
                       {post.title}
                       {post.draft && (
                         <span
-                          class="ml-2 inline-block rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 align-middle text-xs font-medium uppercase tracking-wide text-warning"
+                          class="chip chip--warn"
                           title="Not published to production"
                         >
                           Draft
                         </span>
                       )}
                       <span
-                        class="ml-2 inline-block opacity-0 transition-all group-hover:translate-x-1 group-hover:opacity-100"
+                        class="post-link__arrow"
                         aria-hidden="true"
                       >
                         →
                       </span>
                     </h3>
-                    <p class="mt-1 line-clamp-2 text-sm leading-relaxed text-base-content/60">
-                      {post.excerpt}
-                    </p>
+                    <p class="post-link__excerpt">{post.excerpt}</p>
                   </div>
                 </Link>
               </li>

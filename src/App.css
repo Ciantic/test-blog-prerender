@@ -1,123 +1,631 @@
-@import 'tailwindcss';
-@plugin '@tailwindcss/typography';
+/* ---------------------------------------------------------------------------
+   ciantic-blog — hand-rolled vanilla CSS (no Tailwind / daisyUI).
 
-@theme {
-  --font-sans: Verdana, 'Geneva', 'DejaVu Sans', sans-serif;
+   Two visual "schemes" are exposed as CSS custom properties. The default is
+   light; checking the no-JS .theme-controller checkbox (a hidden <input> in
+   the footer) flips the root to dark — the same idea daisyUI's theme-controller
+   uses, done with `:has()` and `color-scheme` so shiki's light-dark() code
+   colors follow automatically.
+   ------------------------------------------------------------------------- */
+
+:root {
+  /* Keeping color-scheme explicit (rather than UA-default) matters for
+     shiki's `light-dark()` code colors and for native form controls. */
+  color-scheme: light;
+
+  --font-sans: Verdana, Geneva, 'DejaVu Sans', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* Surfaces */
+  --bg: #ffffff;
+  --surface: #f4f5f7;
+  --surface-hover: #e8eaee;
+
+  /* Text */
+  --text: #1f2430;
+  --text-muted: #5c6470;
+  --text-faint: #9aa1ad;
+
+  /* Lines / hairlines */
+  --line: rgba(15, 23, 42, 0.12);
+
+  /* Accent */
+  --accent: #2563eb;
+  --accent-strong: #1d4ed8;
+  --accent-contrast: #ffffff;
+
+  /* Warning (Draft chips) */
+  --warn: #b45309;
+  --warn-bg: rgba(180, 83, 9, 0.1);
 }
+
+/* daisyUI-style CSS-only theme toggle: checking the checkbox (value any)
+   forces the dark scheme. Kept separate so OS-level prefers-color-scheme can
+   be layered in later if wanted. */
+:root:has(.theme-controller:checked) {
+  color-scheme: dark;
+
+  --bg: #0f1116;
+  --surface: #171a21;
+  --surface-hover: #20242d;
+
+  --text: #e6e9ef;
+  --text-muted: #a6adba;
+  --text-faint: #5d6470;
+
+  --line: rgba(255, 255, 255, 0.13);
+
+  --accent: #7aa2ff;
+  --accent-strong: #94b4ff;
+  --accent-contrast: #0a1224;
+
+  --warn: #f2b53d;
+  --warn-bg: rgba(242, 181, 61, 0.12);
+}
+
+/* --- Base ----------------------------------------------------------------- */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+a {
+  color: var(--accent);
+}
+
+a:hover {
+  color: var(--accent-strong);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --- Layout shell --------------------------------------------------------- */
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+/* The column-padding-less full-width bar sits on the header/footer; content
+   inside is capped to the reading width (.container). */
+.container {
+  width: 100%;
+  max-width: 48rem; /* ~3xl */
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+.page {
+  padding-block: 3rem; /* py-12 */
+  flex: 1; /* grow so the footer is pinned to the bottom on short pages */
+}
+
+/* --- Header --------------------------------------------------------------- */
+
+.site-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.site-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.5rem;
+}
+
+.brand {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+
+.brand:hover {
+  color: var(--accent);
+}
+
+.nav ul {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.nav a:hover {
+  color: var(--accent);
+}
+
+/* --- Footer --------------------------------------------------------------- */
+
+.site-footer {
+  margin-top: auto;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+.site-footer__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-block: 1rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.site-footer__right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.site-footer__credit {
+  margin: 0;
+  color: var(--text-faint);
+}
+
+/* --- Theme toggle (CSS-only, no JS) -------------------------------------- */
+
+.theme-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+/* Invisible but still focusable checkbox that drives the whole toggle. */
+.theme-toggle input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.theme-toggle__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: currentColor;
+  pointer-events: none;
+}
+
+/* Swap sun (light, default) / moon (dark, checked) like daisyUI's .swap. */
+.theme-toggle__icon--moon {
+  display: none;
+}
+
+:root:has(.theme-controller:checked) .theme-toggle__icon--moon {
+  display: block;
+}
+
+:root:has(.theme-controller:checked) .theme-toggle__icon--sun {
+  display: none;
+}
+
+/* --- Buttons -------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.btn-primary:hover {
+  background: var(--accent-strong);
+  color: var(--accent-contrast);
+}
+
+.btn-soft {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.btn-soft:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+/* --- Home (post index) ---------------------------------------------------- */
+
+.home-head {
+  margin-bottom: 2.5rem;
+}
+
+.home-tagline {
+  margin: 0.75rem 0 0;
+  font-size: 1.125rem;
+  color: var(--text-muted);
+}
+
+.year {
+  margin-bottom: 2rem;
+}
+
+.year__title {
+  margin: 0 0 0.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.post-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.post-list__item {
+  border-bottom: 1px solid var(--line);
+}
+
+.post-list__item:last-child {
+  border-bottom: none;
+}
+
+.post-link {
+  display: flex;
+  align-items: baseline;
+  gap: 1.25rem;
+  padding: 1.1rem 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.post-link:hover {
+  color: inherit;
+}
+
+.post-link__date {
+  flex-shrink: 0;
+  width: 4.5rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.post-link__body {
+  min-width: 0;
+}
+
+.post-link__title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.post-link:hover .post-link__title {
+  color: var(--accent);
+}
+
+.post-link__arrow {
+  display: inline-block;
+  margin-left: 0.35rem;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.post-link:hover .post-link__arrow {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+.post-link__excerpt {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+/* --- Draft chip ----------------------------------------------------------- */
+
+.chip {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.55rem;
+  border: 1px solid;
+  border-radius: 9999px;
+  vertical-align: middle;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+.chip--warn {
+  color: var(--warn);
+  border-color: var(--warn);
+  background: var(--warn-bg);
+}
+
+/* --- Post page ------------------------------------------------------------ */
+
+.post-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.post-back {
+  margin-top: 4rem;
+}
+
+/* --- Prose (markdown body) — deliberately light --------------------------- */
 
 .prose {
   max-width: none;
+  line-height: 1.75;
+  overflow-wrap: break-word;
 }
-/* The typography plugin wraps the first paragraph of a blockquote in
-   typographic quotes ("..."); we don't want that. */
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  line-height: 1.3;
+  margin: 1.6em 0 0.6em;
+  font-weight: 700;
+}
+
+.prose h1:first-child,
+.prose h2:first-child,
+.prose h3:first-child,
+.prose h4:first-child,
+.prose h5:first-child,
+.prose h6:first-child,
+.prose p:first-child {
+  margin-top: 0;
+}
+
+.prose h1 {
+  font-size: 1.9em;
+}
+
+.prose h2 {
+  font-size: 1.35em;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid var(--line);
+}
+
+.prose h3 {
+  font-size: 1.15em;
+}
+
+.prose h4 {
+  font-size: 1em;
+}
+
+.prose p {
+  margin: 0.85em 0;
+}
+
+.prose a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose a:hover {
+  text-decoration: none;
+}
+
+.prose strong {
+  font-weight: 700;
+}
+
+.prose ul,
+.prose ol {
+  margin: 0.85em 0;
+  padding-left: 1.5em;
+}
+
+.prose li {
+  margin: 0.3em 0;
+}
+
+.prose blockquote {
+  margin: 1em 0;
+  padding: 0.05em 1em;
+  border-left: 3px solid var(--line);
+  color: var(--text-muted);
+}
+
 .prose blockquote p:first-of-type::before,
 .prose blockquote p:first-of-type::after {
   content: none;
 }
-.prose blockquote {
-  font-style: normal;
-}
-.prose h1,
-.prose h2,
-.prose h3,
-.prose h4 {
-  margin-top: 1em;
-  margin-bottom: 0.8em;
+
+.prose img {
+  max-width: 100%;
+  height: auto;
 }
 
-/* Verdana runs wide; keep the post title from dominating the page.
-   Sized in em so it scales with the prose size (base vs lg:prose-lg)
-   and always stays clearly above h2. */
-.prose h1 {
-  font-size: 1.9em;
-  line-height: 1.3;
-  &:first-child {
-    margin-top: 0;
-  }
-}
-.prose h2 {
-  font-size: 1.35em;
-  line-height: 1.35;
+.prose hr {
+  margin: 2em auto;
+  width: 60%;
+  border: 0;
+  border-top: 1px solid var(--line);
 }
 
-/* Shiki code blocks are colored inline via light-dark() (see markdown.ts),
-   which follows the inherited color-scheme that daisyUI's theme-controller
-   drives on :root. Keep the prose plugin's block styling from adding an
-   opaque background that fights shiki's own. */
+/* Inline code (not inside a shiki <pre>). */
+.prose :not(pre) > code {
+  padding: 0.1em 0.35em;
+  border-radius: 0.25em;
+  background: var(--surface-hover);
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}
+
+/* Shiki fenced code blocks. Shiki colors the tokens itself via light-dark(),
+   so we only frame the block; fall back to --surface if Shiki emits no bg. */
 .prose pre.shiki {
-  /* background-color: transparent; */
-  /* Border flips with the theme via light-dark() — the same mechanism the
-     shiki colors use (see markdown.ts), following daisyUI's color-scheme. */
-  border: 1px solid light-dark(rgba(0, 0, 0, 0.215), rgba(255, 255, 255, 0.215));
+  margin: 1em 0;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.6;
 }
 
-/* marked-alert callouts (GitHub-style `> [!NOTE]` blocks). Reuse daisyUI's
-   alert component via @apply instead of hand-rolling the styling. daisyUI
-   has no alert-primary/neutral variant, so IMPORTANT reuses the base alert
-   with a custom primary accent. */
+/* --- marked-alert callouts (GitHub `> [!NOTE]` blocks) -------------------- */
+
 .markdown-alert {
-  @apply alert alert-soft;
-  /* daisyUI's alert is a grid (icon + content). Markdown alerts are block
-     content (title + paragraphs), so fall back to a vertical block layout. */
-  display: block;
+  --alert: var(--accent);
   margin: 1em 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--alert);
+  border-radius: 0.5rem;
+  background: var(--surface);
 }
+
 .markdown-alert-note {
-  @apply alert-info;
+  --alert: light-dark(#2563eb, #7aa2ff);
 }
 .markdown-alert-tip {
-  @apply alert-success;
+  --alert: light-dark(#15803d, #4ade80);
 }
 .markdown-alert-warning {
-  @apply alert-warning;
+  --alert: light-dark(#b45309, #f2b53d);
 }
 .markdown-alert-caution {
-  @apply alert-error;
+  --alert: light-dark(#dc2626, #f87171);
 }
 .markdown-alert-important {
-  --alert-color: var(--color-primary);
-  --alert-border-color: var(--color-primary);
-  color: var(--color-base-content);
+  --alert: light-dark(#9333ea, #c084fc);
 }
+
 .markdown-alert .markdown-alert-title {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--alert-color);
+  margin: 0 0 0.25rem;
+  color: var(--alert);
   font-weight: 700;
-  margin-top: 0;
-}
-.markdown-alert .markdown-alert-title + * {
-  margin-top: 0.5rem;
 }
 
-/* marked-footnote output (GFM `[^1]` footnotes, see markdown.ts). The
-   extension emits <section class="footnotes"> with an sr-only heading and an
-   <ol>. We keep it plain but tidy: separators for the backrefs and a top rule
-   so the list reads as a footnote block rather than run-on body text. */
-.prose .footnotes {
-  margin-top: 2em;
-  border-top: 1px solid light-dark(rgba(0, 0, 0, 0.215), rgba(255, 255, 255, 0.215));
-  padding-top: 0.75em;
-}
-.prose .footnotes ol {
-  font-size: 0.85em;
-  color: var(--color-base-content/70, inherit);
-}
-.prose .footnotes [data-footnote-backref] {
-  margin-left: 0.35em;
-  text-decoration: none;
-  color: inherit;
-}
 .markdown-alert .octicon {
   flex-shrink: 0;
-  color: var(--alert-color);
-  /* marked-alert emits raw octicon SVG paths without a fill and without
-     GitHub's `.octicon { fill: currentColor }` CSS, so the browser default
-     (black) wins unless we opt into currentColor explicitly. */
+  width: 1em;
+  height: 1em;
   fill: currentColor;
 }
 
-@plugin 'daisyui' {
-  themes: bumblebee --default, sunset --prefersdark;
+.markdown-alert p {
+  margin: 0.35em 0 0;
+}
+
+/* --- Footnotes (GFM `[^1]`, see render.ts) -------------------------------- */
+
+.prose .footnotes {
+  margin-top: 2.5em;
+  padding-top: 0.75em;
+  border-top: 1px solid var(--line);
+}
+
+.prose .footnotes ol {
+  margin: 0;
+  padding-left: 1.2em;
+  color: var(--text-muted);
+  font-size: 0.85em;
+}
+
+.prose .footnotes [data-footnote-backref] {
+  margin-left: 0.35em;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* --- Page-not-found (404) ------------------------------------------------- */
+
+.not-found {
+  text-align: center;
+}
+
+.not-found h1 {
+  margin: 0 0 0.5em;
+  font-size: 2rem;
+}
+
+/* --- Utilities ------------------------------------------------------------ */
+
+/* Visually hidden but available to screen readers (Tailwind's sr-only). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

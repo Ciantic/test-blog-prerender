@@ -8,13 +8,13 @@ function PostPage() {
   // Typed by the loader's return type; reactive to param changes.
   const post = Route.useLoaderData();
   return (
-    <main class="container mx-auto max-w-3xl px-4 py-12">
+    <main class="container page">
       <Show when={post().indexed}>
-        <p class="text-sm text-base-content/50 mb-6 flex items-center gap-2">
+        <p class="post-meta">
           {formatDate(post().date)}
           <Show when={post().draft}>
             <span
-              class="inline-block rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-warning"
+              class="chip chip--warn"
               title="Not published to production"
             >
               Draft
@@ -22,11 +22,11 @@ function PostPage() {
           </Show>
         </p>
       </Show>
-      <article class="prose lg:prose-lg">
+      <article class="prose">
         <div innerHTML={post().html} />
       </article>
       <Show when={post().indexed}>
-        <p class="mt-20">
+        <p class="post-back">
           <Link to="/" class="btn btn-soft">
             &larr; Back to blog
           </Link>

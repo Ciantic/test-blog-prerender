@@ -3,8 +3,8 @@ import { SITE_NAME } from '../../site';
 
 function AboutPage() {
   return (
-    <main class="container mx-auto max-w-3xl px-4 py-12">
-      <div class="prose lg:prose-lg">
+    <main class="container page">
+      <div class="prose">
         <h1>About</h1>
         <p>
           Software developer. I think I will figure out something here before merging with the machines.
@@ -20,7 +20,7 @@ function AboutPage() {
         <p>Uses SolidJS v2 and Tanstack Start with pre-rendering. I have <a href="https://github.com/Ciantic/test-blog-prerender" target="_blank">an example clean blog setup here</a>.</p>
         <p>This blog should work without JavaScript enabled, HTML generated still has script tags, but they are mostly harmless bloat.</p>
       </div>
-      <p class="mt-20">
+      <p class="post-back">
         <Link to="/" class="btn btn-soft">
           &larr; Back to blog
         </Link>
