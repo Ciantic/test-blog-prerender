@@ -1,4 +1,4 @@
-# SolidJS + TanStack Start test
+# Ciantic's Blog
 
 Static-prerendered solid blog demo.
 
