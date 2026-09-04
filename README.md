@@ -9,6 +9,8 @@ pnpm build          # build + prerender static site into dist/client
 pnpm serve:static   # serve prerendered dist/client at http://localhost:4173
 ```
 
+During prerendering, client scripts, preload links, and Solid hydration metadata are removed from the emitted HTML, leaving fully static HTML pages.
+
 To add your own posts, make a new repository, and symbolic link it into the `posts` folder. In this example posts are not in separate repository, but tucked in this same repository.
 
 ## Currently implemented

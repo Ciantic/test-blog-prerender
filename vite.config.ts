@@ -2,8 +2,10 @@ import { tanstackStart } from '@tanstack/solid-start/plugin/vite';
 import { defineConfig } from 'vitest/config';
 import solid from 'vite-plugin-solid';
 import { dirname, join, normalize } from 'node:path';
+import { writeFile } from 'node:fs/promises';
 import { initFileCache } from './src/markdown/cache';
 import { getPostMetas } from './src/markdown/posts';
+import { removeJavaScriptFromHtml } from './src/lib/vite-no-hydration-plugin';
 import { postAssetsPlugin } from './src/lib/vite-post-assets-plugin';
 
 const MARKDOWN_POSTS_DIR = join(import.meta.dirname, 'posts');
@@ -41,6 +43,19 @@ export default defineConfig(async () => {
           autoStaticPathsDiscovery: true,
           // Extract links from prerendered HTML and prerender those too.
           crawlLinks: true,
+          // TanStack writes each page before this hook runs, so replace the
+          // emitted HTML with its static, non-hydrating equivalent.
+          onSuccess: async ({ page, html }) => {
+            if (!html.includes('<html')) return;
+
+            const path = page.path === '/'
+              ? 'index.html'
+              : join(page.path.replace(/^\//, ''), 'index.html');
+            await writeFile(
+              join(import.meta.dirname, 'dist/client', path),
+              removeJavaScriptFromHtml(html),
+            );
+          },
         },
         // Prerender each committed post at /<urlPath>/, including unlisted
         // ones. Derived from getPostMetas, the same source that drives asset
