@@ -1,26 +1,73 @@
-dist/client/.vite/manifest.json                                             2.56 kB │ gzip:  0.60 kB
-dist/client/2009/glass-only-fallback-in-windowsforms-01.png                 4.35 kB
-dist/client/2011/where-django-pydev-fails-01.png                           21.08 kB
-dist/client/2010/vlc-spdif-stuttering-fix-01.png                           38.60 kB
-dist/client/2015/in-memory-patching-explorerexe-to-06.png                  43.24 kB
-dist/client/2015/in-memory-patching-explorerexe-to-01.png                  46.18 kB
-dist/client/2015/in-memory-patching-explorerexe-to-03.png                  47.13 kB
-dist/client/2015/in-memory-patching-explorerexe-to-04.png                  47.22 kB
-dist/client/2015/in-memory-patching-explorerexe-to-02.png                  47.68 kB
-dist/client/2015/in-memory-patching-explorerexe-to-05.png                  49.30 kB
-dist/client/2010/windows-7-qos-policies-not-working-01.jpg                 52.25 kB
-dist/client/2010/windows-7-qos-policies-not-working-02.jpg                 64.69 kB
-dist/client/2010/add-your-program-to-default-programs-in-windows7-02.png  105.99 kB
-dist/client/2021/good-enough-02.jpg                                       108.18 kB
-dist/client/2010/add-your-program-to-default-programs-in-windows7-01.png  110.40 kB
-dist/client/2021/good-enough-01.jpg                                       182.31 kB
-dist/client/assets/App-TCjV-6l0.css                                         7.45 kB │ gzip:  2.23 kB
-dist/client/assets/date-Bl1NHTRs.js                                         0.24 kB │ gzip:  0.17 kB
-dist/client/assets/routes-CtAOQiSq.js                                       0.45 kB │ gzip:  0.29 kB
-dist/client/assets/_-BFXD5_zB.js                                            0.54 kB │ gzip:  0.37 kB
-dist/client/assets/about-DdhWTeoU.js                                        0.99 kB │ gzip:  0.60 kB
-dist/client/assets/_-D_J78Uqn.js                                            1.06 kB │ gzip:  0.57 kB
-dist/client/assets/routes-C_ksg7i1.js                                       1.70 kB │ gzip:  0.89 kB
-dist/client/assets/api-BXcvF-ni.js                                         48.01 kB │ gzip: 14.37 kB
-dist/client/assets/index-BCzx1wrj.js                                       66.81 kB │ gzip: 23.60 kB
-dist/client/assets/link-CQiba5Ec.js                                        88.52 kB │ gzip: 32.19 kB
+dist/client/.vite/manifest.json 2.50 kB
+dist/client/2008/django-10-admin-custom-inlines/index.html 11.54 kB
+dist/client/2008/django-custom-admin/index.html 27.82 kB
+dist/client/2008/installation-of-mysql-server-mysqldb/index.html 35.63 kB
+dist/client/2008/lighttpd-1419-compiling-debian-etch/index.html 7.98 kB
+dist/client/2009/django-and-eclipse/index.html 17.58 kB
+dist/client/2009/eclipse-pydev-notes-refresh-errors-and/index.html 2.79 kB
+dist/client/2009/glass-only-fallback-in-windowsforms-01.png 4.25 kB
+dist/client/2009/glass-only-fallback-in-windowsforms/index.html 44.33 kB
+dist/client/2009/inkscape-slicer/index.html 4.47 kB
+dist/client/2009/python-notes/index.html 3.19 kB
+dist/client/2009/semtech2009-conference-coming-up/index.html 3.70 kB
+dist/client/2009/sftp-umask/index.html 4.01 kB
+dist/client/2009/wpf-command-line-arguments/index.html 10.58 kB
+dist/client/2009/wpf-window-with-areo-glass-background-c/index.html 39.88 kB
+dist/client/2010/add-your-program-to-default-programs-in-windows7-01.png 107.82 kB
+dist/client/2010/add-your-program-to-default-programs-in-windows7-02.png 103.51 kB
+dist/client/2010/add-your-program-to-default-programs-in-windows7/index.html 6.13 kB
+dist/client/2010/aero-snap-vertical-maximize-winapi/index.html 4.04 kB
+dist/client/2010/basename-filename-dirname-in-batch/index.html 8.86 kB
+dist/client/2010/python-binary-tree-traversal/index.html 36.27 kB
+dist/client/2010/python-notes-optparse-positional/index.html 4.57 kB
+dist/client/2010/python-snippets-find-all-occurences-of/index.html 4.17 kB
+dist/client/2010/vlc-spdif-stuttering-fix-01.png 37.70 kB
+dist/client/2010/vlc-spdif-stuttering-fix/index.html 3.10 kB
+dist/client/2010/windows-7-qos-policies-not-working-01.jpg 51.03 kB
+dist/client/2010/windows-7-qos-policies-not-working-02.jpg 63.17 kB
+dist/client/2010/windows-7-qos-policies-not-working/index.html 3.99 kB
+dist/client/2011/duplicate-all-pages-in-acrobat-x/index.html 9.46 kB
+dist/client/2011/sticky-footer-variable-height-modern/index.html 7.78 kB
+dist/client/2011/where-django-pydev-fails-01.png 20.59 kB
+dist/client/2011/where-django-pydev-fails/index.html 3.64 kB
+dist/client/2011/windows-7-photo-viewer-was-really-slow/index.html 3.16 kB
+dist/client/2011/wp-turn-off-comments-ping-backs-by/index.html 7.83 kB
+dist/client/2012/imagemagick-save-for-web-jpg/index.html 3.27 kB
+dist/client/2012/ipad-iphone-targetting/index.html 17.11 kB
+dist/client/2012/scala-cast-if-possible-when-getting/index.html 17.52 kB
+dist/client/2015/in-memory-patching-explorerexe-to-01.png 45.10 kB
+dist/client/2015/in-memory-patching-explorerexe-to-02.png 46.56 kB
+dist/client/2015/in-memory-patching-explorerexe-to-03.png 46.03 kB
+dist/client/2015/in-memory-patching-explorerexe-to-04.png 46.12 kB
+dist/client/2015/in-memory-patching-explorerexe-to-05.png 48.14 kB
+dist/client/2015/in-memory-patching-explorerexe-to-06.png 42.23 kB
+dist/client/2015/in-memory-patching-explorerexe-to/index.html 10.03 kB
+dist/client/2015/inject-function-instead-of-dll-to/index.html 12.62 kB
+dist/client/2018/wordpress-slow-try-adding-database/index.html 3.41 kB
+dist/client/2021/apis-need-tagged-unions/index.html 3.47 kB
+dist/client/2021/ast-transformed-text-editor/index.html 3.55 kB
+dist/client/2021/dynamic-language-with-tagged-unions/index.html 14.40 kB
+dist/client/2021/good-enough-01.jpg 178.05 kB
+dist/client/2021/good-enough-02.jpg 105.65 kB
+dist/client/2021/good_enough/index.html 3.49 kB
+dist/client/2021/yubikey-ssh/index.html 35.86 kB
+dist/client/2022/backup-blacklists/index.html 3.37 kB
+dist/client/2022/filter-bubbles-mastodon/index.html 3.55 kB
+dist/client/2022/finland-applies-to-nato/index.html 3.47 kB
+dist/client/2022/garmin-mip-screen-palettes/index.html 8.31 kB
+dist/client/2022/learning-activitypub/index.html 11.40 kB
+dist/client/2022/mastodon-client-hates-you/index.html 4.26 kB
+dist/client/2022/mastodon-has-identity-problem/index.html 7.04 kB
+dist/client/2022/there-is-no-federation/index.html 5.17 kB
+dist/client/2022/total-programming/index.html 4.41 kB
+dist/client/2022/war-and-interdependency/index.html 4.33 kB
+dist/client/2022/wordpress-gutenberg/index.html 4.32 kB
+dist/client/2024/ramfs-root/index.html 18.73 kB
+dist/client/2024/root/index.html 218.82 kB
+dist/client/2026/speedrunning-evolution/index.html 15.49 kB
+dist/client/_headers 1.05 kB
+dist/client/about/index.html 3.07 kB
+dist/client/assets/App-CPk8WnOU.css 7.28 kB
+dist/client/favicon.ico 2.47 kB
+dist/client/index.html 29.31 kB
+dist/client/rss.xml 18.07 kB

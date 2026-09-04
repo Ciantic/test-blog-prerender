@@ -5,7 +5,10 @@ import { dirname, join, normalize } from 'node:path';
 import { writeFile } from 'node:fs/promises';
 import { initFileCache } from './src/markdown/cache';
 import { getPostMetas } from './src/markdown/posts';
-import { removeJavaScriptFromHtml } from './src/lib/vite-no-hydration-plugin';
+import {
+  removeClientBundlesPlugin,
+  removeJavaScriptFromHtml,
+} from './src/lib/vite-no-hydration-plugin';
 import { postAssetsPlugin } from './src/lib/vite-post-assets-plugin';
 
 const MARKDOWN_POSTS_DIR = join(import.meta.dirname, 'posts');
@@ -68,6 +71,10 @@ export default defineConfig(async () => {
           ...metas.map((meta) => ({ path: `/${meta.urlPath}/` })),
         ],
       }),
+      removeClientBundlesPlugin(
+        join(import.meta.dirname, 'dist/client'),
+        join(import.meta.dirname, 'last-build.txt'),
+      ),
       // vite-plugin-solid in SSR mode — the supported Solid plugin for
       // TanStack Start. It injects the client entry and handles the SSR
       // transforms that tanstackStart's server entry relies on.
