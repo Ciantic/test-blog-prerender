@@ -67,7 +67,7 @@ dist/client/2024/root/index.html 218.82 kB
 dist/client/2026/speedrunning-evolution/index.html 15.49 kB
 dist/client/_headers 1.05 kB
 dist/client/about/index.html 3.07 kB
-dist/client/assets/App-CPk8WnOU.css 7.28 kB
+dist/client/assets/App-CBmm9Mw5.css 7.29 kB
 dist/client/favicon.ico 2.47 kB
 dist/client/index.html 29.31 kB
 dist/client/rss.xml 18.07 kB
