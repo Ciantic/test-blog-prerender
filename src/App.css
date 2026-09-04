@@ -305,6 +305,9 @@ a:hover {
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--text-muted);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
 }
 
 .post-list {

@@ -18,7 +18,7 @@ function AboutPage() {
         </ul>
         <h2>Technical details about this blog</h2>
         <p>Uses SolidJS v2 and Tanstack Start with pre-rendering. I have <a href="https://github.com/Ciantic/test-blog-prerender" target="_blank">an example clean blog setup here</a>.</p>
-        <p>This blog should work without JavaScript enabled, HTML generated still has script tags, but they are mostly harmless bloat.</p>
+        <p>I've tried to remove all JavaScript, if blog post needs script tags then it will be only on that post.</p>
       </div>
       <p class="post-back">
         <Link to="/" class="btn btn-soft">
