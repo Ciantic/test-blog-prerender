@@ -95,7 +95,7 @@ async function computePostMetaUncached(
       if (!date) {
         throw new Error(`Post date could not be determined for ${file}`);
       }
-      const draft = basename(file).startsWith("_");
+      const draft = basename(file).startsWith("_") || frontmatter.status === 'draft';
       const excerpt = typeof frontmatter.excerpt === 'string' ? frontmatter.excerpt : undefined;
       const { html, excerpt: excerptFromHtml, assets, links } = await renderMarkdown({ markdown, absPath, title });
       const indexed = /^\d+\//.test(file); // Only posts in a numeric directory are listed.
