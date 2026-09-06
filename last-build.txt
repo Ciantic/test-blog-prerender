@@ -64,10 +64,11 @@ dist/client/2022/war-and-interdependency/index.html 4.34 kB
 dist/client/2022/wordpress-gutenberg/index.html 4.33 kB
 dist/client/2024/ramfs-root/index.html 18.73 kB
 dist/client/2024/root/index.html 218.83 kB
+dist/client/2026/one-year-of-linux/index.html 8.42 kB
 dist/client/2026/speedrunning-evolution/index.html 15.50 kB
 dist/client/_headers 1.05 kB
 dist/client/about/index.html 3.07 kB
 dist/client/assets/App-CBmm9Mw5.css 7.29 kB
 dist/client/favicon.ico 2.47 kB
-dist/client/index.html 29.31 kB
-dist/client/rss.xml 18.07 kB
+dist/client/index.html 30.04 kB
+dist/client/rss.xml 18.38 kB
