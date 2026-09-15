@@ -25,17 +25,17 @@
   --prose-footnote: var(--font-size-xs);
 
   /* Surfaces — light mode is a warm cream "paper" palette. */
-  --bg: light-dark(#faf6eb, #1e2129);
-  --surface: light-dark(#f1ecdd, #171a21);
-  --surface-hover: light-dark(#e7e0ca, #20242d);
+  --bg: light-dark(#fdfbf7, #1e2129);
+  --surface: light-dark(#f7f4ed, #171a21);
+  --surface-stronger: light-dark(#f3eddf, #20242d);
 
-  --btn-bg: light-dark(#fffcf2, #171a21);
-  --btn-bg-hover: light-dark(#e7e0ca, #20242d);
+  --btn-bg: light-dark(#fffdf8, #171a21);
+  --btn-bg-hover: light-dark(#ece6d7, #20242d);
   --btn-text: light-dark(#2e2a20, #d2d9e8);
   --btn-box-shadow: 0 2px 5px light-dark(#00000010, #00000012);
   --btn-text-hover: light-dark(#2e2a20, #d2d9e8);
-  --btn-border: light-dark(#dcd6c9, #2c2f3a);
-  --btn-border-hover: light-dark(#cfc9b8, #3a3d4a);
+  --btn-border: light-dark(#e4ded1, #2c2f3a);
+  --btn-border-hover: light-dark(#d5cfbf, #3a3d4a);
 
   /* Text */
   --text: light-dark(#2e2a20, #d2d9e8);
@@ -205,7 +205,7 @@ a:hover {
 }
 
 .theme-toggle:hover {
-  background: var(--surface-hover);
+  background: var(--surface-stronger);
   color: var(--text);
 }
 
@@ -522,7 +522,7 @@ a:hover {
 .prose :not(pre) > code {
   padding: 0.1em 0.35em;
   border-radius: 0.25em;
-  background: var(--surface-hover);
+  background: var(--surface-stronger);
   font-family: var(--font-mono);
   font-size: var(--prose-code);
 }
