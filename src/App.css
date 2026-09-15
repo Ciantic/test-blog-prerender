@@ -12,8 +12,8 @@
     color-scheme: light dark;
 
   --font-sans: 'Fira Sans', Verdana, Geneva, 'DejaVu Sans', sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
-  
+  --font-mono: 'Fira Code', ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
   --font-weight-light: 300;
   --font-weight-base: 400; 
   --font-weight-semibold: 500; 
@@ -28,7 +28,7 @@
   --prose-h2: 1.35rem;
   --prose-h3: 1.15rem;
   --prose-h4: 1rem;
-  --prose-code: 0.8rem;
+  --prose-code: 0.85rem;
   --prose-footnote: var(--font-size-xs);
 
   /* Surfaces */
