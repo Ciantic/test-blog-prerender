@@ -81,7 +81,9 @@ export default defineConfig(async () => {
       solid({ ssr: true }),
     ],
     server: {
-      port: 3000,
+      host: '0.0.0.0',
+      allowedHosts: true,
+      port: 4000,
     },
     test: {
       environment: 'jsdom',
