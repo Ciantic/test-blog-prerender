@@ -10,7 +10,7 @@ dist/client/2009/glass-only-fallback-in-windowsforms/index.html 44.33 kB
 dist/client/2009/inkscape-slicer/index.html 4.46 kB
 dist/client/2009/python-notes/index.html 3.19 kB
 dist/client/2009/semtech2009-conference-coming-up/index.html 3.69 kB
-dist/client/2009/sftp-umask/index.html 4.00 kB
+dist/client/2009/sftp-umask/index.html 4.01 kB
 dist/client/2009/wpf-command-line-arguments/index.html 10.58 kB
 dist/client/2009/wpf-window-with-areo-glass-background-c/index.html 39.87 kB
 dist/client/2010/add-your-program-to-default-programs-in-windows7-01.png 107.82 kB
@@ -32,7 +32,7 @@ dist/client/2011/where-django-pydev-fails-01.png 20.59 kB
 dist/client/2011/where-django-pydev-fails/index.html 3.64 kB
 dist/client/2011/windows-7-photo-viewer-was-really-slow/index.html 3.15 kB
 dist/client/2011/wp-turn-off-comments-ping-backs-by/index.html 7.83 kB
-dist/client/2012/imagemagick-save-for-web-jpg/index.html 3.26 kB
+dist/client/2012/imagemagick-save-for-web-jpg/index.html 3.27 kB
 dist/client/2012/ipad-iphone-targetting/index.html 17.11 kB
 dist/client/2012/scala-cast-if-possible-when-getting/index.html 17.51 kB
 dist/client/2015/in-memory-patching-explorerexe-to-01.png 45.10 kB
@@ -43,7 +43,7 @@ dist/client/2015/in-memory-patching-explorerexe-to-05.png 48.14 kB
 dist/client/2015/in-memory-patching-explorerexe-to-06.png 42.23 kB
 dist/client/2015/in-memory-patching-explorerexe-to/index.html 10.03 kB
 dist/client/2015/inject-function-instead-of-dll-to/index.html 12.61 kB
-dist/client/2018/wordpress-slow-try-adding-database/index.html 3.40 kB
+dist/client/2018/wordpress-slow-try-adding-database/index.html 3.41 kB
 dist/client/2021/apis-need-tagged-unions/index.html 3.47 kB
 dist/client/2021/ast-transformed-text-editor/index.html 3.54 kB
 dist/client/2021/dynamic-language-with-tagged-unions/index.html 14.40 kB
@@ -70,4 +70,4 @@ dist/client/about/index.html 3.06 kB
 dist/client/assets/App.css 8.14 kB
 dist/client/favicon.ico 2.47 kB
 dist/client/index.html 30.03 kB
-dist/client/rss.xml 18.38 kB
+dist/client/rss.xml 16.47 kB

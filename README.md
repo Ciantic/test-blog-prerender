@@ -23,10 +23,10 @@ To add your own posts, make a new repository, and symbolic link it into the `pos
 - Blog index is grouped by year and sorted newest first.
 - Everything is prerendered
 - Pages load without JavaScript
-- RSS feed (basic, no paging)
+- Atom feed (basic, no paging)
 - Blog index (basic, no paging)
 
 
 ## Not implemented
 
-- Paging for the blog index and RSS feed
+- Paging for the blog index and Atom feed

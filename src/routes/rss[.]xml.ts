@@ -5,6 +5,7 @@ import { getRssXml } from '../lib/api';
 // route: the GET handler returns a Response (content-type has no "html", so
 // prerender writes the body verbatim to dist/client/rss.xml instead of an
 // HTML page). No component — a browser visiting /rss.xml just gets the XML.
+// The body is an Atom 1.0 document.
 export const Route = createFileRoute('/rss.xml')({
   server: {
     handlers: {
@@ -12,7 +13,7 @@ export const Route = createFileRoute('/rss.xml')({
         const xml = await getRssXml();
         return new Response(xml, {
           headers: {
-            'Content-Type': 'application/rss+xml; charset=utf-8',
+            'Content-Type': 'application/atom+xml; charset=utf-8',
             'Cache-Control': 'no-cache',
           },
         });
