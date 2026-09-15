@@ -1,11 +1,4 @@
-/* ---------------------------------------------------------------------------
-   ciantic-blog — hand-rolled vanilla CSS (no Tailwind / daisyUI).
-
-  Theme tokens use light-dark() to follow the OS preference. Checking the
-  no-JS .theme-controller checkbox (a hidden <input> in the footer) forces
-  dark through `:has()` and `color-scheme`, so shiki's light-dark() code
-  colors follow automatically.
-   ------------------------------------------------------------------------- */
+/*! ciantic-blog */
 
 :root {
     /* This also controls shiki's `light-dark()` code colors and native forms. */
