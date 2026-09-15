@@ -97,6 +97,8 @@ export default defineConfig(async () => {
       target: 'esnext',
       // Keep images as asset files instead of inlining them into the JS bundle.
       assetsInlineLimit: 0,
+      // Leave CSS unminified so the emitted stylesheets stay readable.
+      cssMinify: false,
       rollupOptions: {
         output: {
           assetFileNames: 'assets/[name][extname]',

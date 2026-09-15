@@ -67,7 +67,7 @@ dist/client/2024/root/index.html 218.82 kB
 dist/client/2026/one-year-of-linux/index.html 8.41 kB
 dist/client/2026/speedrunning-evolution/index.html 15.49 kB
 dist/client/about/index.html 3.06 kB
-dist/client/assets/App.css 8.14 kB
+dist/client/assets/App.css 12.04 kB
 dist/client/favicon.ico 2.47 kB
 dist/client/index.html 30.03 kB
 dist/client/rss.xml 16.47 kB
