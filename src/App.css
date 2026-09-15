@@ -603,6 +603,18 @@ a:hover {
   text-decoration: none;
 }
 
+/* --- Tables --------------------------------------------------------------- */
+
+table {
+  text-align: left;
+  border-collapse: collapse;
+}
+
+table th, table td {
+  padding: 0.15em 0.45em;
+  border: 1px solid var(--line);
+}
+
 /* --- Page-not-found (404) ------------------------------------------------- */
 
 .not-found {
