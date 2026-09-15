@@ -156,7 +156,7 @@ export async function getPostIndexData(options: { postsDir: string }): Promise<P
     .map(({ html: _html, assets: _assets, links: _links, ...index }) => index);
 }
 
-// Builds the RSS feed (raw XML string) from the committed, indexed posts.
+// Builds the Atom feed (raw XML string) from the committed, indexed posts.
 // Runs server-side only; the route that serves /rss.xml wraps this in a
 // Response. api.ts's getRssXml server fn just calls this.
 export async function getRssXmlData(options: { postsDir: string }): Promise<string> {
@@ -170,6 +170,7 @@ export async function getRssXmlData(options: { postsDir: string }): Promise<stri
     link: `${SITE_URL}/`,
     language: SITE_LANGUAGE,
     copyright: SITE_COPYRIGHT,
+    feedLinks: { atom: `${SITE_URL}/rss.xml` },
   });
 
   // Newest first, by the effective date (frontmatter overrides git date).
@@ -181,6 +182,10 @@ export async function getRssXmlData(options: { postsDir: string }): Promise<stri
     date: meta.date,
   }));
 
+  // Atom requires a feed-level <updated>. Use the newest post's date so the
+  // prerendered output stays deterministic instead of "build time".
+  if (items[0]) feed.options.updated = items[0].date;
+
   for (const { url, title, date } of items) {
     feed.addItem({
       title,
@@ -190,5 +195,5 @@ export async function getRssXmlData(options: { postsDir: string }): Promise<stri
     });
   }
 
-  return feed.rss2();
+  return feed.atom1();
 }

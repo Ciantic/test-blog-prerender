@@ -18,14 +18,14 @@ function AboutPage() {
           </li>
           <li>Post dates and years are derived from git commit history.</li>
           <li>
-            An RSS feed is generated at build time at{' '}
+            An Atom feed is generated at build time at{' '}
             <a href="/rss.xml">/rss.xml</a>.
           </li>
           <li>
             Image dimensions are computed at build time and emitted as width/height attributes.
           </li>
           <li>
-            Supports "non-indexed" posts (drafts) that are not linked from the blog index or RSS feed. For example see <a href="/other/">Other -page</a>.
+            Supports "non-indexed" posts (drafts) that are not linked from the blog index or Atom feed. For example see <a href="/other/">Other -page</a>.
           </li>
         </ul>
         What it doesn't do at least yet: 

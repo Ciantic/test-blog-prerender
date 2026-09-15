@@ -26,8 +26,8 @@ export const Route = createRootRoute({
     meta: [{ title: SITE_NAME }],
     links: [
       { rel: 'stylesheet', href: appCss },
-      // RSS autodiscovery — lets feed readers find the feed from any page.
-      { rel: 'alternate', type: 'application/rss+xml', title: SITE_NAME, href: '/rss.xml' },
+      // Feed autodiscovery — lets feed readers find the Atom feed from any page.
+      { rel: 'alternate', type: 'application/atom+xml', title: SITE_NAME, href: '/rss.xml' },
     ],
   }),
   component: () => (
