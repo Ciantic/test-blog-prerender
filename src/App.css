@@ -24,27 +24,27 @@
   --prose-code: 0.85rem;
   --prose-footnote: var(--font-size-xs);
 
-  /* Surfaces */
-  --bg: light-dark(#ffffff, #0f1116);
-  --surface: light-dark(#f4f5f7, #171a21);
-  --surface-hover: light-dark(#e8eaee, #20242d);
+  /* Surfaces — light mode is a warm cream "paper" palette. */
+  --bg: light-dark(#faf6eb, #0f1116);
+  --surface: light-dark(#f1ecdd, #171a21);
+  --surface-hover: light-dark(#e7e0ca, #20242d);
 
   /* Text */
-  --text: light-dark(#000, #e6e9ef);
-  --text-muted: light-dark(#707883, #a6adba);
-  --text-faint: light-dark(#b9c0cc, #5d6470);
+  --text: light-dark(#2e2a20, #e6e9ef);
+  --text-muted: light-dark(#6b6350, #a6adba);
+  --text-faint: light-dark(#a89c80, #5d6470);
 
   /* Lines / hairlines */
-  --line: light-dark(rgba(15, 23, 42, 0.12), rgba(255, 255, 255, 0.13));
+  --line: light-dark(rgba(74, 58, 30, 0.17), rgba(255, 255, 255, 0.13));
 
   /* Accent */
-  --accent: light-dark(#2563eb, #7aa2ff);
-  --accent-strong: light-dark(#1d4ed8, #94b4ff);
+  --accent: light-dark(#1d4ed8, #7aa2ff);
+  --accent-strong: light-dark(#1e3a8a, #94b4ff);
   --accent-contrast: light-dark(#ffffff, #0a1224);
 
   /* Warning (Draft chips) */
-  --warn: light-dark(#b45309, #f2b53d);
-  --warn-bg: light-dark(rgba(180, 83, 9, 0.1), rgba(242, 181, 61, 0.12));
+  --warn: light-dark(#92400e, #f2b53d);
+  --warn-bg: light-dark(rgba(146, 64, 14, 0.12), rgba(242, 181, 61, 0.12));
 }
 
 /* daisyUI-style CSS-only theme toggle: checking the checkbox (value any)
@@ -513,18 +513,22 @@ a:hover {
   font-size: var(--prose-code);
 }
 
-/* Shiki fenced code blocks. Shiki colors the tokens itself via light-dark(),
-   so we only frame the block; fall back to --surface if Shiki emits no bg. */
+/* Shiki code blocks */
 .prose pre.shiki {
   margin: 1em 0;
   padding: 1rem 1.1rem;
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: 0.5rem;
-  background: var(--surface);
+  background: var(--surface) !important;
   font-family: var(--font-mono);
   font-size: var(--prose-code);
   line-height: 1.6;
+}
+
+.prose pre.shiki,
+.prose pre.shiki span {
+  background: var(--surface) !important;
 }
 
 /* --- marked-alert callouts (GitHub `> [!NOTE]` blocks) -------------------- */
@@ -540,19 +544,19 @@ a:hover {
 }
 
 .markdown-alert-note {
-  --alert: light-dark(#2563eb, #7aa2ff);
+  --alert: light-dark(#1d4ed8, #7aa2ff);
 }
 .markdown-alert-tip {
-  --alert: light-dark(#15803d, #4ade80);
+  --alert: light-dark(#166534, #4ade80);
 }
 .markdown-alert-warning {
-  --alert: light-dark(#b45309, #f2b53d);
+  --alert: light-dark(#92400e, #f2b53d);
 }
 .markdown-alert-caution {
-  --alert: light-dark(#dc2626, #f87171);
+  --alert: light-dark(#b91c1c, #f87171);
 }
 .markdown-alert-important {
-  --alert: light-dark(#9333ea, #c084fc);
+  --alert: light-dark(#7e22ce, #c084fc);
 }
 
 .markdown-alert .markdown-alert-title {
