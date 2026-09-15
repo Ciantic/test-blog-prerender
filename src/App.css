@@ -25,12 +25,12 @@
   --prose-footnote: var(--font-size-xs);
 
   /* Surfaces — light mode is a warm cream "paper" palette. */
-  --bg: light-dark(#faf6eb, #0f1116);
+  --bg: light-dark(#faf6eb, #1e2129);
   --surface: light-dark(#f1ecdd, #171a21);
   --surface-hover: light-dark(#e7e0ca, #20242d);
 
   /* Text */
-  --text: light-dark(#2e2a20, #e6e9ef);
+  --text: light-dark(#2e2a20, #d2d9e8);
   --text-muted: light-dark(#6b6350, #a6adba);
   --text-faint: light-dark(#a89c80, #5d6470);
 
@@ -38,8 +38,8 @@
   --line: light-dark(rgba(74, 58, 30, 0.17), rgba(255, 255, 255, 0.13));
 
   /* Accent */
-  --accent: light-dark(#1d4ed8, #7aa2ff);
-  --accent-strong: light-dark(#1e3a8a, #94b4ff);
+  --accent: light-dark(#882d22, #9bb5f1);
+  --accent-strong: light-dark(#b91c0b, #6f93e8);
   --accent-contrast: light-dark(#ffffff, #0a1224);
 
   /* Warning (Draft chips) */
