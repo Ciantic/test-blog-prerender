@@ -27,7 +27,7 @@ function PostPage() {
       </article>
       <Show when={post().indexed}>
         <p class="post-back">
-          <Link to="/" class="btn btn-soft">
+          <Link to="/" class="btn">
             &larr; Back to blog
           </Link>
         </p>

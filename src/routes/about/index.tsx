@@ -21,7 +21,7 @@ function AboutPage() {
         <p>I've tried to remove all JavaScript, if blog post needs script tags then it will be only on that post.</p>
       </div>
       <p class="post-back">
-        <Link to="/" class="btn btn-soft">
+        <Link to="/" class="btn">
           &larr; Back to blog
         </Link>
       </p>

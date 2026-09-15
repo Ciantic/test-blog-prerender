@@ -29,6 +29,14 @@
   --surface: light-dark(#f1ecdd, #171a21);
   --surface-hover: light-dark(#e7e0ca, #20242d);
 
+  --btn-bg: light-dark(#fffcf2, #171a21);
+  --btn-bg-hover: light-dark(#e7e0ca, #20242d);
+  --btn-text: light-dark(#2e2a20, #d2d9e8);
+  --btn-box-shadow: 0 2px 5px light-dark(#00000010, #00000012);
+  --btn-text-hover: light-dark(#2e2a20, #d2d9e8);
+  --btn-border: light-dark(#dcd6c9, #2c2f3a);
+  --btn-border-hover: light-dark(#cfc9b8, #3a3d4a);
+
   /* Text */
   --text: light-dark(#2e2a20, #d2d9e8);
   --text-muted: light-dark(#6b6350, #a6adba);
@@ -247,6 +255,16 @@ a:hover {
   text-decoration: none;
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border-color: var(--btn-border);
+  box-shadow: var(--btn-box-shadow);
+}
+
+.btn:hover {
+  background: var(--btn-bg-hover);
+  border-color: var(--btn-border-hover);
+  color: var(--btn-text-hover);
 }
 
 .btn-primary {
@@ -259,15 +277,12 @@ a:hover {
   color: var(--accent-contrast);
 }
 
-.btn-soft {
-  background: var(--surface);
-  color: var(--text);
-  border-color: var(--line);
-}
-
-.btn-soft:hover {
-  background: var(--surface-hover);
-  color: var(--text);
+.btn-link,
+.btn-link:hover {
+  background: none;
+  border-color: transparent;
+  text-decoration: underline;
+  box-shadow: none;
 }
 
 /* --- Home (post index) ---------------------------------------------------- */
@@ -459,7 +474,6 @@ a:hover {
 }
 
 .prose a {
-  text-decoration: underline;
   text-underline-offset: 2px;
 }
 
